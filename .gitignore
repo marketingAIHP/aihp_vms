@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+coverage/
+.env
+.env.local
+*.log
+apps/mobile/.expo/
+apps/mobile/.expo-shared/
+apps/mobile/.metro-health-check*
+apps/api/dist/

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Visitor Management System",
+    "slug": "visitor-management-system",
+    "version": "1.0.0",
+    "scheme": "vms",
+    "android": {
+      "package": "com.aihp.visitormanagementsystem",
+      "versionCode": 1
+    }
+  }
+}
