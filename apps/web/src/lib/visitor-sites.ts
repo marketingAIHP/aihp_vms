@@ -1,0 +1,66 @@
+export const visitorSites = [
+  "AIHP Tower",
+  "AIHP Cyber Greens 2",
+  "AIHP Cyber Greens",
+  "AIHP Horizon",
+  "AIHP Signature",
+  "AIHP Palms",
+  "AIHP Millennium",
+  "AIHP Milestone",
+  "BPTP Centra 1",
+  "Eros City Square",
+  "Silverton Tower",
+  "SPAZE BUSINESS PARK",
+  "Splendor Spectrum",
+  "Unitech Business Zone",
+  "M3M URBANA",
+  "Pioneer Urban Square",
+  "Palm Spring Plaza",
+  "Ocus Technopolis",
+  "Veritas",
+  "MGF Metropolis",
+  "AIHP SCO-27",
+  "AIHP Executive Center",
+  "AIHP Broadway",
+  "AIHP Skyline",
+  "Good Earth City Center Mall",
+  "Spaze ITech Park",
+  "AIHP Atrium",
+  "AIHP Spectra",
+  "AIHP ONE",
+  "RP Farms",
+  "GULBAGH MANDI FARMS",
+  "PT NO: 390"
+] as const;
+
+export type VisitorSite = (typeof visitorSites)[number];
+
+const visitorSiteImages: Partial<Record<VisitorSite, string>> = {
+  "AIHP Palms": "/site-images/Aihp-Plams.webp",
+  "BPTP Centra 1": "/site-images/bptp-centra.webp",
+  "Eros City Square": "/site-images/Eros-City-Square.webp",
+  "Silverton Tower": "/site-images/Silverton-Tower.webp",
+  "SPAZE BUSINESS PARK": "/site-images/Spaze-Business-Park.webp",
+  "Splendor Spectrum": "/site-images/SPLENDOR-SPECTRUM-1.webp",
+  "Unitech Business Zone": "/site-images/UNITECH-BUSINESS-ZONE-1-e1753089211223.webp",
+  "M3M URBANA": "/site-images/M3M-Urbana.webp",
+  "Pioneer Urban Square": "/site-images/Pioneer-Urban-Square.webp",
+  "Palm Spring Plaza": "/site-images/Palm-Spring-Plaza.webp",
+  "Ocus Technopolis": "/site-images/Ocus-Technopolis.webp",
+  Veritas: "/site-images/veritas_.webp",
+  "MGF Metropolis": "/site-images/mgf_.webp",
+  "AIHP SCO-27": "/site-images/sco.webp",
+  "AIHP Executive Center": "/site-images/executive.webp",
+  "AIHP Broadway": "/site-images/broadway_gallery-5-qvjd8zhinuyd7bappd5sumligsn0pjpcuy0l6fj4xs.webp",
+  "AIHP Skyline": "/site-images/skyline.webp",
+  "Good Earth City Center Mall": "/site-images/Good-Earth.webp",
+  "Spaze ITech Park": "/site-images/Spaze-ITech-Park.webp",
+  "AIHP Atrium": "/site-images/Atrium1.webp",
+  "AIHP Spectra": "/site-images/spectra.webp",
+  "AIHP ONE": "/site-images/AIHP One.jpeg",
+  "PT NO: 390": "/site-images/AIHP-390-91-1536x864.webp",
+};
+
+export function getVisitorSiteImage(site: string) {
+  return visitorSiteImages[site as VisitorSite] ?? "/site-images/default-site.svg";
+}

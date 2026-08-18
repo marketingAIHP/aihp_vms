@@ -1,0 +1,7 @@
+<svg width="420" height="240" viewBox="0 0 420 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="420" height="240" rx="28" fill="transparent"/>
+  <text x="26" y="144" fill="#FFFFFF" font-family="Georgia" font-size="126" font-weight="700">A</text>
+  <path d="M152 26H198V162C198 180 188 191 175 191C162 191 152 180 152 162V26Z" fill="#D90416"/>
+  <text x="185" y="144" fill="#FFFFFF" font-family="Georgia" font-size="126" font-weight="700">HP</text>
+  <text x="28" y="204" fill="#FFFFFF" font-family="Arial" font-size="34" font-weight="700" letter-spacing="2">Arking Pvt.Ltd</text>
+</svg>
