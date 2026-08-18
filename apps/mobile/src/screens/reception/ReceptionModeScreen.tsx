@@ -1,10 +1,11 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { QrCode } from "lucide-react-native";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "qrcode";
-import { SvgXml } from "react-native-svg";
+import { SvgUri, SvgXml } from "react-native-svg";
+import { AIHPLogo } from "../../components/branding/AIHPLogo";
 import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, radius, spacing } from "../../theme";
@@ -44,6 +45,39 @@ const fallbackSites = [
   "GULBAGH MANDI FARMS",
   "PT NO: 390"
 ] as const;
+
+type ReceptionSite = {
+  address?: string;
+  id: string;
+  imageUrl?: string;
+  name: string;
+};
+
+const fallbackSiteImages: Record<string, string> = {
+  "AIHP Palms": "Aihp-Plams.webp",
+  "BPTP Centra 1": "bptp-centra.webp",
+  "Eros City Square": "Eros-City-Square.webp",
+  "Silverton Tower": "Silverton-Tower.webp",
+  "SPAZE BUSINESS PARK": "Spaze-Business-Park.webp",
+  "Splendor Spectrum": "SPLENDOR-SPECTRUM-1.webp",
+  "Unitech Business Zone": "UNITECH-BUSINESS-ZONE-1-e1753089211223.webp",
+  "M3M URBANA": "M3M-Urbana.webp",
+  "Pioneer Urban Square": "Pioneer-Urban-Square.webp",
+  "Palm Spring Plaza": "Palm-Spring-Plaza.webp",
+  "Ocus Technopolis": "Ocus-Technopolis.webp",
+  Veritas: "veritas_.webp",
+  "MGF Metropolis": "mgf_.webp",
+  "AIHP SCO-27": "sco.webp",
+  "AIHP Executive Center": "executive.webp",
+  "AIHP Broadway": "broadway_gallery-5-qvjd8zhinuyd7bappd5sumligsn0pjpcuy0l6fj4xs.webp",
+  "AIHP Skyline": "skyline.webp",
+  "Good Earth City Center Mall": "Good-Earth.webp",
+  "Spaze ITech Park": "Spaze-ITech-Park.webp",
+  "AIHP Atrium": "Atrium1.webp",
+  "AIHP Spectra": "spectra.webp",
+  "AIHP ONE": "AIHP%20One.jpeg",
+  "PT NO: 390": "AIHP-390-91-1536x864.webp"
+};
 
 function buildSiteToken(value: string) {
   return encodeURIComponent(value.trim());
@@ -114,11 +148,33 @@ function ReceptionModeContent() {
   const { masterData } = useVmsData();
   const [activeQr, setActiveQr] = useState<"checkin" | "checkout" | null>(null);
   const [selectedSite, setSelectedSite] = useState("");
+  const [siteRecords, setSiteRecords] = useState<ReceptionSite[]>([]);
   const [sitePickerVisible, setSitePickerVisible] = useState(false);
+  const baseUrl = useMemo(() => getWebBaseUrl(), []);
   const availableSites = useMemo(
-    () => (masterData.buildings.length ? masterData.buildings : [...fallbackSites]),
-    [masterData.buildings]
+    () => (siteRecords.length
+      ? siteRecords.map((site) => site.name)
+      : masterData.buildings.length
+        ? masterData.buildings
+        : [...fallbackSites]),
+    [masterData.buildings, siteRecords]
   );
+
+  useEffect(() => {
+    if (!baseUrl) return;
+
+    let active = true;
+    void fetch(`${baseUrl}/api/public/sites`)
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload: { sites?: ReceptionSite[] }) => {
+        if (active && payload.sites?.length) setSiteRecords(payload.sites);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [baseUrl]);
 
   useEffect(() => {
     if (!selectedSite) {
@@ -129,8 +185,11 @@ function ReceptionModeContent() {
     }
   }, [availableSites, selectedSite, session?.siteName]);
 
-  const baseUrl = useMemo(() => getWebBaseUrl(), []);
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
+  const selectedSiteRecord = siteRecords.find((site) => site.name === selectedSite);
+  const fallbackImage = fallbackSiteImages[selectedSite];
+  const siteImageUrl = selectedSiteRecord?.imageUrl
+    || (fallbackImage && baseUrl ? `${baseUrl}/site-images/${fallbackImage}` : "");
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
   const hasSites = availableSites.length > 0;
@@ -148,9 +207,10 @@ function ReceptionModeContent() {
         {baseUrl ? (
           activeQr ? (
             <>
-              <View style={styles.welcomeCard}>
-                <Text style={styles.eyebrow}>Welcome to AIHP</Text>
-                <Text style={styles.siteTitle}>{selectedSite}</Text>
+              <View style={styles.brandHero}>
+                <View style={styles.logoShell}><AIHPLogo size="sm" onDark /></View>
+                <Text style={styles.heroTitle}>{selectedSite}</Text>
+                <Text style={styles.heroSubtitle}>Secure Visitor Access &amp; Building Operations</Text>
               </View>
 
               <ReceptionQrCard
@@ -165,9 +225,10 @@ function ReceptionModeContent() {
             </>
           ) : (
             <>
-              <View style={styles.welcomeCard}>
-                <Text style={styles.eyebrow}>Welcome to AIHP</Text>
-                <Text style={styles.siteTitle}>{selectedSite || "Select a site"}</Text>
+              <View style={styles.brandHero}>
+                <View style={styles.logoShell}><AIHPLogo size="sm" onDark /></View>
+                <Text style={styles.heroTitle}>{selectedSite || "Select a site"}</Text>
+                <Text style={styles.heroSubtitle}>Secure Visitor Access &amp; Building Operations</Text>
               </View>
 
               <View style={styles.selectionCard}>
@@ -180,10 +241,27 @@ function ReceptionModeContent() {
                 </Pressable>
 
                 {selectedSite ? (
-                  <View style={styles.buttonStack}>
-                    <AppButton title="Visitor Check-In" onPress={() => setActiveQr("checkin")} />
-                    <AppButton title="Visitor Check-Out" variant="secondary" onPress={() => setActiveQr("checkout")} />
-                  </View>
+                  <>
+                    <View style={styles.siteImageCard}>
+                      <View style={styles.siteImageCanvas}>
+                        {siteImageUrl ? (
+                          <Image source={{ uri: siteImageUrl }} style={styles.siteImage} resizeMode="contain" />
+                        ) : (
+                          <SvgUri uri={`${baseUrl}/site-images/default-site.svg`} width="100%" height="100%" />
+                        )}
+                      </View>
+                      <View style={styles.siteCaption}>
+                        <Text style={styles.siteCaptionLabel}>SELECTED SITE</Text>
+                        <Text style={styles.siteCaptionTitle}>{selectedSite}</Text>
+                        {selectedSiteRecord?.address ? <Text style={styles.siteAddress}>{selectedSiteRecord.address}</Text> : null}
+                      </View>
+                    </View>
+                    <View style={styles.actionRow}>
+                      <AppButton title="Visitor Check-In" style={styles.actionButton} onPress={() => setActiveQr("checkin")} />
+                      <AppButton title="Visitor Check-Out" style={styles.actionButton} variant="secondary" onPress={() => setActiveQr("checkout")} />
+                    </View>
+                    <Text style={styles.helperText}>Select a site, then open the required QR. Only one QR is shown at a time.</Text>
+                  </>
                 ) : (
                   <Text style={styles.helperText}>Select a site to continue.</Text>
                 )}
@@ -230,7 +308,7 @@ function ReceptionModeContent() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.screenBackground
+    backgroundColor: colors.navyInk
   },
   content: {
     padding: spacing.md,
@@ -249,28 +327,37 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 44
   },
-  welcomeCard: {
-    backgroundColor: colors.cardBackground,
+  brandHero: {
+    alignItems: "center",
+    backgroundColor: colors.navyInk,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(18,138,160,0.24)",
     padding: spacing.lg,
-    gap: spacing.xs,
+    gap: spacing.sm,
     shadowColor: colors.navyInk,
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
     elevation: 3
   },
-  eyebrow: {
-    color: colors.secondaryText,
-    fontSize: 13,
-    fontWeight: "600"
+  logoShell: {
+    borderColor: "rgba(255,255,255,0.15)",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
   },
-  siteTitle: {
-    color: colors.textPrimary,
+  heroTitle: {
+    color: colors.pureWhite,
     fontSize: 20,
-    fontWeight: "800"
+    fontWeight: "800",
+    textAlign: "center"
+  },
+  heroSubtitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    textAlign: "center"
   },
   selectionCard: {
     backgroundColor: colors.cardBackground,
@@ -318,8 +405,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700"
   },
-  buttonStack: {
+  siteImageCard: {
+    backgroundColor: colors.pureWhite,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: "hidden"
+  },
+  siteImageCanvas: {
+    alignItems: "center",
+    backgroundColor: colors.pureWhite,
+    height: 250,
+    justifyContent: "center"
+  },
+  siteImage: {
+    height: "100%",
+    width: "100%"
+  },
+  siteCaption: {
+    backgroundColor: "#0B1824",
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    padding: spacing.md
+  },
+  siteCaptionLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.8
+  },
+  siteCaptionTitle: {
+    color: colors.pureWhite,
+    fontSize: 21,
+    fontWeight: "800",
+    marginTop: 4
+  },
+  siteAddress: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    marginTop: 4
+  },
+  actionRow: {
+    flexDirection: "row",
     gap: spacing.sm
+  },
+  actionButton: {
+    flex: 1,
+    minHeight: 60,
+    paddingHorizontal: spacing.sm
   },
   helperText: {
     color: colors.secondaryText,
