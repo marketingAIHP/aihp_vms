@@ -1,7 +1,6 @@
 import { BellDot, Search } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function PageHeader({
   title,
@@ -24,7 +23,6 @@ export function PageHeader({
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="w-72 pl-9" placeholder="Search visitors, sites, reports..." />
           </div>
-          <ThemeToggle />
           <button className="relative inline-flex size-10 items-center justify-center rounded-full border border-border bg-card">
             <BellDot className="size-4" />
           </button>
