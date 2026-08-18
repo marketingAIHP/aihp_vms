@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { loginAction } from "@/lib/auth/actions";
@@ -19,6 +20,7 @@ const roleOptions: Array<{ icon: string; label: string; value: AppRole }> = [
 ];
 
 export function WebLoginScreen({ initialRole = "site_manager" }: { initialRole?: AppRole }) {
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<AppRole>(initialRole);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,12 +64,14 @@ export function WebLoginScreen({ initialRole = "site_manager" }: { initialRole?:
 
     startTransition(async () => {
       try {
-        await loginAction({
+        const result = await loginAction({
           role: selectedRole,
           email: email.trim(),
           password,
           rememberMe: true,
         });
+        router.replace(result.redirectTo);
+        router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to sign in.");
       }

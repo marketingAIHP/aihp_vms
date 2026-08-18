@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { forgotPasswordAction, loginAction } from "@/lib/auth/actions";
@@ -23,6 +24,7 @@ export function LoginForm({
   demoEmail: string;
   demoPassword: string;
 }) {
+  const router = useRouter();
   const [email, setEmail] = useState(demoEmail);
   const [password, setPassword] = useState(demoPassword);
   const [rememberMe, setRememberMe] = useState(true);
@@ -48,12 +50,14 @@ export function LoginForm({
 
             startTransition(async () => {
               try {
-                await loginAction({
+                const result = await loginAction({
                   role,
                   email,
                   password,
                   rememberMe,
                 });
+                router.replace(result.redirectTo);
+                router.refresh();
               } catch (error) {
                 toast.error(error instanceof Error ? error.message : "Unable to sign in.");
               }

@@ -80,7 +80,7 @@ export async function loginAction(input: {
       role: input.role,
       rememberMe: input.rememberMe,
     });
-    redirect(input.role === "admin" ? "/admin/dashboard" : "/site-manager/dashboard");
+    return { redirectTo: input.role === "admin" ? "/admin/dashboard" : "/site-manager/dashboard" };
   }
 
   if (
@@ -129,7 +129,7 @@ export async function loginAction(input: {
     rememberMe: input.rememberMe,
   });
 
-  redirect(profile.role === "admin" ? "/admin/dashboard" : "/site-manager/dashboard");
+  return { redirectTo: profile.role === "admin" ? "/admin/dashboard" : "/site-manager/dashboard" };
 }
 
 export async function logoutAction() {
