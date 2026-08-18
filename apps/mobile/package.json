@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "build:apk": "eas build --platform android --profile production",
     "build:store": "eas build --platform android --profile store",
-    "update:production": "eas update --channel production",
+    "update:production": "eas update --channel production --environment production --platform android",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
