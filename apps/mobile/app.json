@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Visitor Management System",
+    "name": "AIHP",
     "slug": "visitor-management-system",
+    "icon": "./assets/aihp-icon.png",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -26,7 +27,11 @@
       "@react-native-community/datetimepicker"
     ],
     "android": {
-      "package": "com.aihp.visitormanagementsystem"
+      "package": "com.aihp.visitormanagementsystem",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/aihp-icon-foreground.png",
+        "backgroundColor": "#051622"
+      }
     },
     "extra": {
       "router": {},
