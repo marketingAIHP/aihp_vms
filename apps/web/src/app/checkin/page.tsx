@@ -330,7 +330,7 @@ function CheckInPageContent() {
     setMessage("");
 
     const payload = new FormData();
-    payload.set("siteToken", siteToken);
+    payload.set("siteToken", siteName);
     payload.set("visitorName", form.visitorName);
     payload.set("mobileNumber", form.mobileNumber);
     payload.set("companyComingFrom", form.companyComingFrom);

@@ -43,7 +43,7 @@ function CheckOutPageContent() {
     const response = await fetch("/api/public/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phoneNumber: normalizedPhoneNumber, siteToken, action: "lookup" }),
+      body: JSON.stringify({ phoneNumber: normalizedPhoneNumber, siteToken: siteName, action: "lookup" }),
     });
     const result = await response.json();
     setLoading(false);
@@ -61,7 +61,7 @@ function CheckOutPageContent() {
     const response = await fetch("/api/public/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phoneNumber: normalizedPhoneNumber, siteToken, action: "checkout" }),
+      body: JSON.stringify({ phoneNumber: normalizedPhoneNumber, siteToken: siteName, action: "checkout" }),
     });
     const result = await response.json();
     setLoading(false);
