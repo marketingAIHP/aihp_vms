@@ -10,6 +10,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-reanimated": "4.3.1",
+    "react-native-worklets": "0.8.3",
     "nanoid": "^6.0.1",
     "postcss": "^8.5.26",
     "sharp": "^0.35.3",
@@ -19,6 +21,8 @@
     "dev:mobile": "npm --workspace apps/mobile run start",
     "dev:api": "npm --workspace apps/api run start:dev",
     "dev:web": "npm --workspace apps/web run dev",
+    "build:android:apk": "npm --workspace apps/mobile run build:apk",
+    "build:android:store": "npm --workspace apps/mobile run build:store",
     "lint:mobile": "npm --workspace apps/mobile run lint",
     "lint:api": "npm --workspace apps/api run lint",
     "lint:web": "npm --workspace apps/web run lint",
@@ -27,7 +31,7 @@
     "typecheck:web": "npm --workspace apps/web run typecheck"
   },
   "dependencies": {
-    "expo": "~56.0.19",
+    "expo": "~56.0.20",
     "react": "19.2.3",
     "react-native": "0.85.3"
   }

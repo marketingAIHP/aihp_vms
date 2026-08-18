@@ -3,6 +3,14 @@
     "name": "Visitor Management System",
     "slug": "visitor-management-system",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7e4cba54-d077-4228-84c9-9d1e10ce76fa",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "scheme": "vms",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -14,11 +22,11 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       "@react-native-community/datetimepicker"
     ],
     "android": {
-      "package": "com.aihp.visitormanagementsystem",
-      "versionCode": 1
+      "package": "com.aihp.visitormanagementsystem"
     },
     "extra": {
       "router": {},
