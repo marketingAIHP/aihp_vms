@@ -6,7 +6,6 @@ import {
   FlatList,
   Modal,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   View
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute";
 import { useVmsData } from "../../hooks/use-vms-data";
+import { saveReportToDevice } from "../../lib/report-export";
 import type { UserRecord, VisitRecord } from "../../types/vms";
 import { colors, radius, spacing } from "../../theme";
 import { AppButton, Badge, Panel } from "../../ui/components";
@@ -55,19 +55,6 @@ const timePeriodOptions: SelectOption[] = [
   { label: "Yearly", value: "yearly" },
   { label: "Custom", value: "custom" }
 ];
-
-function buildCsv(rows: Record<string, string | number>[]) {
-  if (rows.length === 0) {
-    return "No records";
-  }
-
-  const headers = Object.keys(rows[0]);
-  const lines = [
-    headers.join(","),
-    ...rows.map((row) => headers.map((header) => JSON.stringify(row[header] ?? "")).join(","))
-  ];
-  return lines.join("\n");
-}
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -249,22 +236,40 @@ function ReportsContent() {
     }
 
     const rows = filteredRecords.map((visit) => ({
-      Visitor: visit.visitorName,
-      SiteManager: visit.siteManagerName,
-      Building: visit.building,
+      "Visitor Name": visit.visitorName,
+      Company: visit.company,
+      "Person To Meet": visit.siteManagerName,
+      Site: visit.building,
       Purpose: visit.purpose,
       Status: visit.status,
-      CheckedInAt: formatDateTime(visit.checkedInAt ?? visit.createdAt)
+      "Check-In Time": formatDateTime(visit.checkedInAt ?? visit.createdAt),
+      "Check-Out Time": visit.checkedOutAt ? formatDateTime(visit.checkedOutAt) : "Not checked out"
     }));
-
-    const content = buildCsv(rows);
-    const title = `Visitor Management ${selectedFormat} Report`;
+    const period = timePeriod === "monthly"
+      ? `${monthOptions.find((option) => option.value === selectedMonth)?.label} ${selectedYear}`
+      : timePeriod === "quarterly"
+        ? `${selectedQuarter === "1" ? "January-March" : selectedQuarter === "2" ? "April-June" : selectedQuarter === "3" ? "July-September" : "October-December"} ${selectedYear} (${quarterOptions.find((option) => option.value === selectedQuarter)?.label})`
+        : timePeriod === "yearly"
+          ? `January-December ${selectedYear}`
+          : `${formatDate(fromDate)} to ${formatDate(toDate)}`;
+    const site = selectedBuilding || "All Sites";
+    const siteManager = siteManagerOptions.find((option) => option.value === selectedSiteManager)?.label || "All Site Managers";
 
     try {
-      await Share.share({
-        title,
-        message: selectedFormat === "PDF" ? `${title}\n\n${content}` : content
+      const filename = await saveReportToDevice({
+        fileLabel: `AIHP_VMS_Admin_Visitor_Report_${timePeriod}_${period}_${site}`,
+        format: selectedFormat,
+        metadata: {
+          generatedAt: new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
+          period,
+          recordCount: rows.length,
+          reportName: "AIHP VMS Admin Visitor Report",
+          site,
+          siteManager
+        },
+        rows
       });
+      Alert.alert("Report downloaded", `${filename} was saved to the selected device folder.`);
     } catch (error) {
       Alert.alert("Download failed", error instanceof Error ? error.message : "Unable to export report.");
     }

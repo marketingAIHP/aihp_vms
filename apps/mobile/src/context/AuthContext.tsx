@@ -1,6 +1,9 @@
+import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { createContext, useContext, useEffect, useMemo } from "react";
 import type { PropsWithChildren } from "react";
 import { apiClient } from "../lib/api-client";
+import { registerPushNotifications, unregisterPushNotifications } from "../lib/push-notifications";
 import { type SessionRole, useSessionStore } from "../store/session-store";
 
 type AuthContextValue = {
@@ -53,6 +56,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [clearSession, setHydrating, setSession]);
 
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    void registerPushNotifications().catch(() => {
+      // Notification setup must not block an otherwise valid authenticated session.
+    });
+
+    const openNotifications = () => {
+      router.push(session.role === "admin" ? "/admin-notifications" : "/site-manager-notifications");
+    };
+
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(openNotifications);
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        openNotifications();
+        void Notifications.clearLastNotificationResponseAsync();
+      }
+    });
+
+    return () => {
+      responseSubscription.remove();
+    };
+  }, [session?.role, session?.userId]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       isHydrating,
@@ -66,8 +95,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setSession(nextSession);
       },
       async logout() {
-        await apiClient.logout();
-        clearSession();
+        try {
+          await unregisterPushNotifications();
+        } catch {
+          // Supabase sign-out must still complete if token deactivation is temporarily unavailable.
+        } finally {
+          await apiClient.logout();
+          clearSession();
+        }
       },
       async requestPasswordReset(email) {
         await apiClient.requestPasswordReset(email);
@@ -86,4 +121,3 @@ export function useAuth() {
   }
   return context;
 }
-

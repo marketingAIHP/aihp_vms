@@ -125,8 +125,9 @@ Commands:
 ```powershell
 npm --workspace apps/mobile run typecheck
 npm --workspace apps/mobile run start
-npx eas build --platform android --profile preview
-npx eas build --platform android --profile production
+cd apps/mobile
+eas build --platform android --profile production
+# Use profile store instead when an AAB is required for Google Play.
 ```
 
 Verify:

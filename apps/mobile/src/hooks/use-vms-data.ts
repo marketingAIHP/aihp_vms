@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { apiClient } from "../lib/api-client";
+import { supabase } from "../lib/supabase";
 import type { AuditItem, MasterData, NotificationItem, UserRecord, VisitRecord } from "../types/vms";
 
 const emptyMasterData: MasterData = {
@@ -10,6 +11,8 @@ const emptyMasterData: MasterData = {
   purposes: [],
   categories: []
 };
+
+let realtimeChannelSequence = 0;
 
 type VmsDataState = {
   auditLogs: AuditItem[];
@@ -45,7 +48,7 @@ export function useVmsData() {
       const [visits, masterData, notifications] = await Promise.all([
         apiClient.listVisits(),
         apiClient.getMasterData(),
-        apiClient.getNotifications()
+        apiClient.getNotifications(session.userId, session.role)
       ]);
       const [users, auditLogs] = session.role === "admin"
         ? await Promise.all([apiClient.getUsers(), apiClient.getAuditLogs()])
@@ -69,9 +72,48 @@ export function useVmsData() {
     }
   }
 
+  const refreshForRealtime = useEffectEvent(() => {
+    void refresh();
+  });
+
   useEffect(() => {
     void refresh();
   }, [session?.role, session?.userId]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefresh = () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+      refreshTimer = setTimeout(refreshForRealtime, 150);
+    };
+
+    const channel = supabase
+      .channel(`vms-live-${session.userId}-${++realtimeChannelSequence}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        scheduleRefresh
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "visits" },
+        scheduleRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
+      void supabase.removeChannel(channel);
+    };
+  }, [session?.userId]);
 
   return {
     ...state,

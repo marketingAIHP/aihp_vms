@@ -23,6 +23,7 @@ model User {
   createdUsers  User[]         @relation("UserCreatedBy")
   managedVisits Visit[]        @relation("ManagedVisits")
   notifications Notification[]
+  pushTokens    PushToken[]
   auditLogs     AuditLog[]
 
   @@map("profiles")
@@ -87,6 +88,21 @@ model Notification {
 
   @@index([userId], map: "notifications_user_id_idx")
   @@map("notifications")
+}
+
+model PushToken {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  expoPushToken String   @unique @map("expo_push_token")
+  platform      String
+  isActive      Boolean  @default(true) @map("is_active")
+  lastError     String?  @map("last_error")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId, isActive], map: "push_tokens_user_active_idx")
+  @@map("push_tokens")
 }
 
 model AuditLog {

@@ -371,7 +371,7 @@ function CheckInPageContent() {
     setMessage("");
     successTimerRef.current = window.setTimeout(() => {
       resetForm();
-    }, 4000);
+    }, 30000);
   }
 
   function handleAgreementScroll() {
@@ -425,6 +425,10 @@ function CheckInPageContent() {
           </CardHeader>
           <CardContent className="space-y-3 text-center">
             <p className="text-base text-foreground">Please proceed to the reception.</p>
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+              Please check out before leaving. Do not forget to complete your check-out.
+            </div>
+            <p className="text-sm text-muted-foreground">A new check-in form will be available in 30 seconds.</p>
           </CardContent>
         </Card>
       </main>

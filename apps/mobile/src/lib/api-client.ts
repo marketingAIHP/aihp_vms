@@ -169,6 +169,20 @@ function toNotificationItem(row: NotificationRow): NotificationItem {
   };
 }
 
+function removeDuplicateNotifications(items: NotificationItem[]) {
+  const seen = new Map<string, number>();
+  return items.filter((item) => {
+    const key = `${item.title.trim().toLowerCase()}|${item.message.trim().toLowerCase()}`;
+    const createdAt = new Date(item.createdAt).getTime();
+    const previous = seen.get(key);
+    if (previous !== undefined && Math.abs(previous - createdAt) <= 10_000) {
+      return false;
+    }
+    seen.set(key, createdAt);
+    return true;
+  });
+}
+
 async function getProfile(userId: string): Promise<ProfileRow> {
   const primaryQuery = await supabase
     .from("profiles")
@@ -294,18 +308,25 @@ export const apiClient = {
     return loadVisits();
   },
 
-  async getNotifications() {
-    const { data, error } = await supabase
+  async getNotifications(userId: string, role: SessionRole) {
+    let query = supabase
       .from("notifications")
       .select("id, title, message, created_at, target_roles, user_id, is_read")
-      .order("created_at", { ascending: false })
-      .limit(20);
+      .order("created_at", { ascending: false });
+
+    query = role === "admin"
+      ? query.contains("target_roles", ["admin"]).is("user_id", null)
+      : query.eq("user_id", userId);
+
+    const { data, error } = await query.limit(20);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return (data ?? []).map((item) => toNotificationItem(item as NotificationRow));
+    return removeDuplicateNotifications(
+      (data ?? []).map((item) => toNotificationItem(item as NotificationRow))
+    );
   },
 
   async markNotificationRead(notificationId: string) {

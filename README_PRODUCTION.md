@@ -148,16 +148,20 @@ npm --workspace apps/mobile run start
 ### Build APK with EAS
 
 ```powershell
-npx eas build --platform android --profile preview
+cd C:\AIHP_visitor_management\apps\mobile
+eas build --platform android --profile production
 ```
 
-For a production Play-distribution style build:
+Run EAS commands from `apps/mobile`, not the monorepo root. For a Google Play Store AAB:
 
 ```powershell
-npx eas build --platform android --profile production
+eas build --platform android --profile store
 ```
 
 ## 4. Supabase Setup
+
+For Web/Android Realtime and Android background push delivery, complete
+`PUSH_NOTIFICATIONS_SETUP.md` before creating the final APK.
 
 The Supabase project already exists. Before production release, verify:
 

@@ -60,19 +60,29 @@ async function notifyCheckout(
   visit: VisitRow
 ) {
   const message = `${visit.visitor_name} checked out from ${visit.building}.`;
-  await supabase.from("notifications").insert([
+  const notifications = [
     {
       title: "Visitor Checked-Out",
       message,
       target_roles: ["admin"]
-    },
-    {
+    }
+  ];
+  const { data: manager } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", visit.host_user_id)
+    .maybeSingle();
+
+  if (manager?.role === "host" || manager?.role === "site_manager") {
+    notifications.push({
       user_id: visit.host_user_id,
       title: "Visitor Checked-Out",
       message,
       target_roles: ["host"]
-    }
-  ] as any);
+    } as any);
+  }
+
+  await supabase.from("notifications").insert(notifications as any);
 }
 
 export async function POST(request: Request) {

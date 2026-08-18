@@ -18,6 +18,7 @@ type ProfileRow = {
   company_name: string | null;
   full_name: string;
   id: string;
+  role: "admin" | "host" | "site_manager";
 };
 
 const PURPOSE_OPTIONS = new Set([
@@ -60,7 +61,7 @@ async function resolveAssignedSiteManager(
 
   const siteQuery = await supabase
     .from("profiles")
-    .select("id, full_name, company_name")
+    .select("id, full_name, company_name, role")
     .eq("role", "host")
     .eq("is_active", true)
     .eq("company_name", siteToken)
@@ -78,7 +79,7 @@ async function resolveAssignedSiteManager(
 
   const fallbackQuery = await supabase
     .from("profiles")
-    .select("id, full_name, company_name")
+    .select("id, full_name, company_name, role")
     .eq("role", "admin")
     .eq("is_active", true)
     .order("full_name", { ascending: true });
@@ -105,19 +106,24 @@ async function createNotifications(
 ) {
   const message = `${visitorName} checked in at ${building}.`;
 
-  await supabase.from("notifications").insert([
+  const notifications = [
     {
       title: "Visitor Checked-In",
       message,
       target_roles: ["admin"]
-    },
-    {
+    }
+  ];
+
+  if (manager.role !== "admin") {
+    notifications.push({
       user_id: manager.id,
       title: "Visitor Checked-In",
       message,
       target_roles: ["host"]
-    }
-  ] as any);
+    } as any);
+  }
+
+  await supabase.from("notifications").insert(notifications as any);
 }
 
 export async function POST(request: Request) {
