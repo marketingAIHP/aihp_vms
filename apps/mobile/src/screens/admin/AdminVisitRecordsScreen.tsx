@@ -1,12 +1,12 @@
 import { router } from "expo-router";
-import { useMemo } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute";
 import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, spacing } from "../../theme";
 import type { VisitRecord } from "../../types/vms";
-import { Badge } from "../../ui/components";
+import { AppInput, Badge } from "../../ui/components";
 import { getRecentCheckIns } from "./admin-utils";
 
 function tone(status: VisitRecord["status"]): "neutral" | "info" | "success" | "warning" | "danger" {
@@ -40,7 +40,27 @@ function AdminVisitRecordsContent({
   title: string;
 }) {
   const { error, loading, refresh, visits } = useVmsData();
-  const records = useMemo(() => filter(visits), [filter, visits]);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<VisitRecord["status"] | "">("");
+  const [site, setSite] = useState("");
+  const [openFilter, setOpenFilter] = useState<"status" | "site" | null>(null);
+  const sourceRecords = useMemo(() => filter(visits), [filter, visits]);
+  const sites = useMemo(
+    () => Array.from(new Set(sourceRecords.map((record) => record.building).filter(Boolean))).sort(),
+    [sourceRecords]
+  );
+  const records = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return sourceRecords.filter((record) => {
+      if (status && record.status !== status) return false;
+      if (site && record.building !== site) return false;
+      if (!normalized) return true;
+      return [record.visitorName, record.mobile, record.company, record.siteManagerName, record.purpose, record.building]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized);
+    });
+  }, [query, site, sourceRecords, status]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -64,7 +84,26 @@ function AdminVisitRecordsContent({
       <FlatList
         data={records}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={records.length === 0 ? styles.emptyContainer : styles.list}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View style={styles.filters}>
+            <AppInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search visitor, phone, company, person, or site"
+            />
+            <View style={styles.filterRow}>
+              <Pressable style={styles.filterButton} onPress={() => setOpenFilter("status")}>
+                <Text style={styles.filterText}>{status ? status.replaceAll("_", " ") : "All Statuses"}</Text>
+                <Text style={styles.chevron}>⌄</Text>
+              </Pressable>
+              <Pressable style={styles.filterButton} onPress={() => setOpenFilter("site")}>
+                <Text numberOfLines={1} style={styles.filterText}>{site || "All Sites"}</Text>
+                <Text style={styles.chevron}>⌄</Text>
+              </Pressable>
+            </View>
+          </View>
+        }
         ListEmptyComponent={<Text style={styles.emptyText}>{emptyText}</Text>}
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -81,6 +120,30 @@ function AdminVisitRecordsContent({
           </View>
         )}
       />
+
+      <Modal animationType="fade" transparent visible={Boolean(openFilter)} onRequestClose={() => setOpenFilter(null)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setOpenFilter(null)}>
+          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.modalTitle}>{openFilter === "status" ? "Filter by status" : "Filter by site"}</Text>
+            <FlatList
+              data={openFilter === "status" ? ["", "CHECKED_IN", "CHECKED_OUT"] : ["", ...sites]}
+              keyExtractor={(item) => item || "all"}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.option}
+                  onPress={() => {
+                    if (openFilter === "status") setStatus(item as VisitRecord["status"] | "");
+                    else setSite(item);
+                    setOpenFilter(null);
+                  }}
+                >
+                  <Text style={styles.optionText}>{item ? item.replaceAll("_", " ") : openFilter === "status" ? "All Statuses" : "All Sites"}</Text>
+                </Pressable>
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -135,6 +198,36 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.sm
   },
+  filters: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: spacing.sm
+  },
+  filterButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.cardBackground,
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.xs
+  },
+  filterText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    flex: 1
+  },
+  chevron: {
+    color: colors.secondaryText,
+    fontSize: 16
+  },
   emptyContainer: {
     flexGrow: 1,
     alignItems: "center",
@@ -144,7 +237,36 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.secondaryText,
     fontSize: 15,
-    textAlign: "center"
+    textAlign: "center",
+    paddingVertical: spacing.xl
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+    backgroundColor: "rgba(5, 22, 34, 0.55)"
+  },
+  modalCard: {
+    maxHeight: "70%",
+    borderRadius: 22,
+    backgroundColor: colors.cardBackground,
+    padding: spacing.md
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: spacing.sm
+  },
+  option: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
+  },
+  optionText: {
+    color: colors.textPrimary,
+    fontSize: 15
   },
   card: {
     backgroundColor: colors.cardBackground,

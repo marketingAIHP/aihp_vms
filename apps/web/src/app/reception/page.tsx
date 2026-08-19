@@ -16,6 +16,8 @@ function buildSiteToken(value: string) {
   return encodeURIComponent(value.trim());
 }
 
+const QR_DISPLAY_DURATION_MS = 60_000;
+
 function getWebBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_WEB_BASE_URL;
   if (configured?.trim()) {
@@ -86,6 +88,16 @@ export default function ReceptionPage() {
   useEffect(() => {
     setBaseUrl(getWebBaseUrl());
   }, []);
+
+  useEffect(() => {
+    if (!activeQr) return;
+
+    const timer = window.setTimeout(() => {
+      setActiveQr(null);
+    }, QR_DISPLAY_DURATION_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [activeQr]);
 
   useEffect(() => {
     let active = true;

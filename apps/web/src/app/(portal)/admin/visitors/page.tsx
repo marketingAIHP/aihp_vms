@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchJson } from "@/lib/api";
@@ -9,25 +9,38 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import type { SiteRecord } from "@/lib/types";
 
 export default function AdminVisitorsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [site, setSite] = useState("");
+  const [date, setDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data } = useQuery({
-    queryKey: ["admin-visitors", search, status, site],
+    queryKey: ["admin-visitors", search, status, site, date],
     queryFn: () =>
       fetchJson<{
         visitors: Array<Record<string, string>>;
         auditLogs: Array<{ id: string; detail: string; createdAt: string }>;
-      }>(`/api/admin/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}`),
+      }>(`/api/admin/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`),
   });
+  const { data: sitesData } = useQuery({
+    queryKey: ["admin-sites", "visitor-filters"],
+    queryFn: () => fetchJson<{ sites: SiteRecord[] }>("/api/admin/sites?includeImages=false"),
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setStatus(params.get("status") ?? "");
+    setDate(params.get("date") ?? "");
+  }, []);
 
   const updateMutation = useMutation({
     mutationFn: (payload: { id: string; notes: string }) =>
@@ -62,7 +75,9 @@ export default function AdminVisitorsPage() {
     onSuccess: () => {
       toast.success("Visitor checked out.");
       queryClient.invalidateQueries({ queryKey: ["admin-visitors"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
     },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to check out visitor."),
   });
 
   const selectedVisitor = useMemo(
@@ -77,8 +92,23 @@ export default function AdminVisitorsPage() {
           <CardTitle>Visitor Management</CardTitle>
           <div className="grid gap-3 md:grid-cols-3">
             <Input placeholder="Search visitor, email, phone, site" value={search} onChange={(e) => setSearch(e.target.value)} />
-            <Input placeholder="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)} />
-            <Input placeholder="Filter by site" value={site} onChange={(e) => setSite(e.target.value)} />
+            <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="CHECKED_IN">Checked In</SelectItem>
+                <SelectItem value="CHECKED_OUT">Checked Out</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={site || "all"} onValueChange={(value) => setSite(value === "all" ? "" : value)}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Filter by site" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {sitesData?.sites.filter((item) => item.isActive).map((item) => (
+                  <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
@@ -110,9 +140,11 @@ export default function AdminVisitorsPage() {
                     <Button size="sm" variant="outline" onClick={() => setSelectedId(visitor.id)}>
                       Edit
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => checkOutMutation.mutate(visitor.id)}>
-                      Check-Out
-                    </Button>
+                    {visitor.status === "CHECKED_IN" ? (
+                      <Button disabled={checkOutMutation.isPending} size="sm" variant="outline" onClick={() => checkOutMutation.mutate(visitor.id)}>
+                        Check-Out
+                      </Button>
+                    ) : null}
                     <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(visitor.id)}>
                       Delete
                     </Button>

@@ -9,12 +9,21 @@ export async function GET() {
     const [visits, profiles, sites, auditLogs] = await Promise.all([
       fetchVisits(),
       fetchProfiles(),
-      fetchSites(),
-      fetchAuditLogs(6)
+      fetchSites({ includeImages: false }),
+      fetchAuditLogs(50)
     ]);
 
     const activeSiteManagers = profiles.filter((profile) => profile.role === "host" && profile.is_active !== false);
     const summary = buildReportSummary(visits, sites.length, activeSiteManagers.length);
+    const seenActivity = new Set<string>();
+    const visitorActivity = auditLogs.filter((item) => {
+      if (item.target_table !== "visits") return false;
+      if (!["CHECK_IN", "CHECK_OUT", "UPDATE_VISITOR", "DELETE_VISITOR"].includes(item.action)) return false;
+      const key = `${item.action}:${item.target_id ?? item.detail}`;
+      if (seenActivity.has(key)) return false;
+      seenActivity.add(key);
+      return true;
+    }).slice(0, 6);
 
     return NextResponse.json({
       summary,
@@ -23,7 +32,7 @@ export async function GET() {
         { name: "Checked In", value: summary.checkedIn },
         { name: "Checked Out", value: summary.checkedOut }
       ],
-      recentActivity: auditLogs.map((item) => mapAudit(item))
+      recentActivity: visitorActivity.map((item) => mapAudit(item))
     });
   } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

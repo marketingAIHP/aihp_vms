@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
       return true;
     });
 
-    return NextResponse.json({ visitors: filtered, auditLogs: auditLogs.map((item) => mapAudit(item)) });
+    return NextResponse.json({
+      visitors: filtered,
+      auditLogs: auditLogs.filter((item) => item.target_table === "visits").map((item) => mapAudit(item))
+    });
   } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }

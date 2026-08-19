@@ -16,6 +16,10 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ message: "Visit not found." }, { status: 404 });
   }
 
+  if (visit.status !== "CHECKED_IN" || visit.checkOutAt) {
+    return NextResponse.json({ message: "This visitor has already checked out." }, { status: 409 });
+  }
+
   if (session.role === "site_manager" && visit.siteManagerId !== profile?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -26,9 +30,18 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   }
 
   const now = new Date().toISOString();
-  const { error } = await supabase.from("visits").update({ exited_at: now, status: "EXITED" }).eq("id", id);
+  const { data: updatedRows, error } = await supabase
+    .from("visits")
+    .update({ exited_at: now, status: "EXITED" })
+    .eq("id", id)
+    .eq("status", "CHECKED_IN")
+    .is("exited_at", null)
+    .select("id");
   if (error) {
     return NextResponse.json({ message: error.message }, { status: 400 });
+  }
+  if (!updatedRows?.length) {
+    return NextResponse.json({ message: "This visitor has already checked out." }, { status: 409 });
   }
 
   await Promise.all([

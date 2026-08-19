@@ -64,6 +64,11 @@ function formatDateTime(value: string) {
   return new Date(value).toLocaleString();
 }
 
+function vehicleNumberFromNotes(value: string | undefined) {
+  const match = (value ?? "").match(/(?:^|\n)Vehicle Number:\s*(.+)/i);
+  return match?.[1]?.trim() || "-";
+}
+
 function getStatusTone(status: VisitRecord["status"]) {
   if (status === "CHECKED_IN") {
     return "success" as const;
@@ -237,10 +242,12 @@ function ReportsContent() {
 
     const rows = filteredRecords.map((visit) => ({
       "Visitor Name": visit.visitorName,
+      "Phone Number": visit.mobile || "-",
       Company: visit.company,
       "Person To Meet": visit.siteManagerName,
       Site: visit.building,
       Purpose: visit.purpose,
+      "Vehicle Number": vehicleNumberFromNotes(visit.notes),
       Status: visit.status,
       "Check-In Time": formatDateTime(visit.checkedInAt ?? visit.createdAt),
       "Check-Out Time": visit.checkedOutAt ? formatDateTime(visit.checkedOutAt) : "Not checked out"

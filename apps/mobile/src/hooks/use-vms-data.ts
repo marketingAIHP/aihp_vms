@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { apiClient } from "../lib/api-client";
 import { supabase } from "../lib/supabase";
@@ -14,10 +15,8 @@ const emptyMasterData: MasterData = {
 
 let realtimeChannelSequence = 0;
 
-type VmsDataState = {
+type VmsDataPayload = {
   auditLogs: AuditItem[];
-  error: string | null;
-  loading: boolean;
   masterData: MasterData;
   notifications: NotificationItem[];
   users: UserRecord[];
@@ -26,59 +25,36 @@ type VmsDataState = {
 
 export function useVmsData() {
   const { session } = useAuth();
-  const [state, setState] = useState<VmsDataState>({
-    auditLogs: [],
-    error: null,
-    loading: true,
-    masterData: emptyMasterData,
-    notifications: [],
-    users: [],
-    visits: []
-  });
-
-  async function refresh() {
-    if (!session) {
-      setState((current) => ({ ...current, loading: false }));
-      return;
-    }
-
-    setState((current) => ({ ...current, loading: true, error: null }));
-
-    try {
-      const [visits, masterData, notifications] = await Promise.all([
+  const queryClient = useQueryClient();
+  const queryKey = ["vms-data", session?.userId, session?.role] as const;
+  const query = useQuery<VmsDataPayload>({
+    queryKey,
+    enabled: Boolean(session),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    queryFn: async () => {
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const [visits, masterData, notifications, adminData] = await Promise.all([
         apiClient.listVisits(),
         apiClient.getMasterData(),
-        apiClient.getNotifications(session.userId, session.role)
+        apiClient.getNotifications(session.userId, session.role),
+        session.role === "admin"
+          ? Promise.all([apiClient.getUsers(), apiClient.getAuditLogs()])
+          : Promise.resolve([[], []] as [UserRecord[], AuditItem[]])
       ]);
-      const [users, auditLogs] = session.role === "admin"
-        ? await Promise.all([apiClient.getUsers(), apiClient.getAuditLogs()])
-        : [[], []];
-
-      setState({
+      const [users, auditLogs] = adminData;
+      return {
         auditLogs,
-        error: null,
-        loading: false,
         masterData,
         notifications,
         users,
         visits
-      });
-    } catch (error) {
-      setState((current) => ({
-        ...current,
-        error: error instanceof Error ? error.message : "Unable to load data.",
-        loading: false
-      }));
+      };
     }
-  }
-
-  const refreshForRealtime = useEffectEvent(() => {
-    void refresh();
   });
-
-  useEffect(() => {
-    void refresh();
-  }, [session?.role, session?.userId]);
+  const refresh = useCallback(async () => {
+    await query.refetch();
+  }, [query.refetch]);
 
   useEffect(() => {
     if (!session) {
@@ -90,7 +66,11 @@ export function useVmsData() {
       if (refreshTimer) {
         clearTimeout(refreshTimer);
       }
-      refreshTimer = setTimeout(refreshForRealtime, 150);
+      refreshTimer = setTimeout(() => {
+        void queryClient.invalidateQueries({
+          queryKey: ["vms-data", session.userId, session.role]
+        });
+      }, 150);
     };
 
     const channel = supabase
@@ -113,10 +93,16 @@ export function useVmsData() {
       }
       void supabase.removeChannel(channel);
     };
-  }, [session?.userId]);
+  }, [queryClient, session?.role, session?.userId]);
 
   return {
-    ...state,
+    auditLogs: query.data?.auditLogs ?? [],
+    error: query.error instanceof Error ? query.error.message : null,
+    loading: query.isPending,
+    masterData: query.data?.masterData ?? emptyMasterData,
+    notifications: query.data?.notifications ?? [],
+    users: query.data?.users ?? [],
+    visits: query.data?.visits ?? [],
     refresh
   };
 }

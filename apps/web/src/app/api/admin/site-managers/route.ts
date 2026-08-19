@@ -6,7 +6,7 @@ async function resolveSiteName(siteIdOrName: string) {
   const value = siteIdOrName.trim();
   if (!value) return "";
 
-  const sites = await fetchSites();
+  const sites = await fetchSites({ includeImages: false });
   const matched = sites.find((site) => site.id === value || site.name === value);
   return matched?.name ?? value;
 }

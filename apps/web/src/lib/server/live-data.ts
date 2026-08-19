@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { AppRole, ReportSummary, SettingsRecord, SiteManagerRecord, SiteRecord, VisitRecord } from "@/lib/types";
 import {
   extractLegacyPhotoUrl,
@@ -92,17 +92,25 @@ const DEFAULT_SETTINGS: SettingsRecord = {
   securityMode: "strict"
 };
 
+let supabaseAdminClient: SupabaseClient<any> | null | undefined;
+
 export function getSupabaseAdminClient() {
+  if (supabaseAdminClient !== undefined) {
+    return supabaseAdminClient;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
+    supabaseAdminClient = null;
     return null;
   }
 
-  return createClient(url, key, {
+  supabaseAdminClient = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
+  return supabaseAdminClient;
 }
 
 export function normalizeRole(role: RawRole | null | undefined): AppRole {
@@ -137,13 +145,13 @@ async function resolveVisitPhotoUrl(notes: string | null) {
   return legacyPublicUrl || undefined;
 }
 
-export async function mapVisitRecord(row: VisitRow): Promise<VisitRecord | null> {
+export async function mapVisitRecord(row: VisitRow, includePhoto = false): Promise<VisitRecord | null> {
   const status = normalizeVisitStatus(row);
   if (!status) {
     return null;
   }
 
-  const photoUrl = await resolveVisitPhotoUrl(row.notes);
+  const photoUrl = includePhoto ? await resolveVisitPhotoUrl(row.notes) : undefined;
 
   return {
     id: row.id,
@@ -279,7 +287,7 @@ export async function fetchProfileByEmail(email: string) {
   return profiles.find((profile) => profile.email?.trim().toLowerCase() === email.trim().toLowerCase()) ?? null;
 }
 
-export async function fetchVisits() {
+export async function fetchVisits(options?: { includePhotos?: boolean }) {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
     throw new Error("Supabase is not configured for the web app.");
@@ -294,7 +302,9 @@ export async function fetchVisits() {
     throw new Error(error.message);
   }
 
-  const visits = await Promise.all(((data ?? []) as VisitRow[]).map((item) => mapVisitRecord(item)));
+  const visits = await Promise.all(
+    ((data ?? []) as VisitRow[]).map((item) => mapVisitRecord(item, options?.includePhotos === true))
+  );
   return visits.filter((item): item is VisitRecord => Boolean(item));
 }
 
@@ -336,7 +346,7 @@ export async function fetchAuditLogs(limit = 30) {
   return (data ?? []) as AuditRow[];
 }
 
-export async function fetchSites(): Promise<SiteRecord[]> {
+export async function fetchSites(options?: { includeImages?: boolean }): Promise<SiteRecord[]> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
     throw new Error("Supabase is not configured for the web app.");
@@ -354,25 +364,27 @@ export async function fetchSites(): Promise<SiteRecord[]> {
     throw new Error(error.message);
   }
 
-  return Promise.all(
-    ((data ?? []) as MasterDataRow[]).map(async (item) => {
-      let imageUrl: string | undefined;
-      if (item.image_path) {
-        const signedImage = await supabase.storage.from("site-images").createSignedUrl(item.image_path, 60 * 30);
-        if (!signedImage.error) {
-          imageUrl = signedImage.data?.signedUrl;
-        }
+  const rows = (data ?? []) as MasterDataRow[];
+  const signedUrls = new Map<string, string>();
+  if (options?.includeImages !== false) {
+    const imagePaths = Array.from(new Set(rows.map((item) => item.image_path).filter((path): path is string => Boolean(path))));
+    if (imagePaths.length) {
+      const signedImages = await supabase.storage.from("site-images").createSignedUrls(imagePaths, 60 * 30);
+      if (!signedImages.error) {
+        signedImages.data?.forEach((item, index) => {
+          if (item.signedUrl) signedUrls.set(imagePaths[index], item.signedUrl);
+        });
       }
+    }
+  }
 
-      return {
+  return rows.map((item) => ({
         id: item.id ?? item.value,
         name: item.value,
         address: item.address ?? "",
-        imageUrl,
+        imageUrl: item.image_path ? signedUrls.get(item.image_path) : undefined,
         isActive: item.is_active !== false
-      };
-    })
-  );
+  }));
 }
 
 export async function fetchSiteStoragePath(siteId: string) {

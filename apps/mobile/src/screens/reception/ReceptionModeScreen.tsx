@@ -46,6 +46,8 @@ const fallbackSites = [
   "PT NO: 390"
 ] as const;
 
+const QR_DISPLAY_DURATION_MS = 60_000;
+
 type ReceptionSite = {
   address?: string;
   id: string;
@@ -184,6 +186,16 @@ function ReceptionModeContent() {
       }
     }
   }, [availableSites, selectedSite, session?.siteName]);
+
+  useEffect(() => {
+    if (!activeQr) return;
+
+    const timer = setTimeout(() => {
+      setActiveQr(null);
+    }, QR_DISPLAY_DURATION_MS);
+
+    return () => clearTimeout(timer);
+  }, [activeQr]);
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
   const selectedSiteRecord = siteRecords.find((site) => site.name === selectedSite);

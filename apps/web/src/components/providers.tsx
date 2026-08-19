@@ -17,27 +17,46 @@ function RealtimeQuerySync() {
     }
 
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-    const scheduleRefresh = () => {
+    const pendingQueryKeys = new Set<string>();
+    const scheduleRefresh = (keys: Set<string>) => {
+      keys.forEach((key) => pendingQueryKeys.add(key));
       if (refreshTimer) {
         clearTimeout(refreshTimer);
       }
       refreshTimer = setTimeout(() => {
-        void queryClient.invalidateQueries();
+        void queryClient.invalidateQueries({
+          predicate: (query) => pendingQueryKeys.has(String(query.queryKey[0]))
+        });
+        pendingQueryKeys.clear();
       }, 150);
     };
+
+    const visitQueryKeys = new Set([
+      "admin-overview",
+      "admin-reports",
+      "admin-visitors",
+      "site-manager-overview",
+      "site-manager-reports",
+      "site-manager-visitors"
+    ]);
+    const notificationQueryKeys = new Set([
+      "admin-overview",
+      "site-manager-notifications",
+      "site-manager-overview"
+    ]);
 
     const channel = supabase
       .channel("web-vms-live-updates")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "visits" },
-        scheduleRefresh
+        () => scheduleRefresh(visitQueryKeys)
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
         (payload: { eventType: string; new: Record<string, unknown> }) => {
-          scheduleRefresh();
+          scheduleRefresh(notificationQueryKeys);
           if (payload.eventType === "INSERT") {
             const notification = payload.new as { message?: string; title?: string };
             toast.info(notification.title ?? "Visitor update", {
