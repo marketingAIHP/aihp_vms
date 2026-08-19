@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { ChevronLeft, LogIn, LogOut, QrCode } from "lucide-react";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PublicHero } from "@/components/visitor/public-hero";
-import { getVisitorSiteImage, visitorSites } from "@/lib/visitor-sites";
+import { visitorSites } from "@/lib/visitor-sites";
 import type { SiteRecord } from "@/lib/types";
 
 function buildSiteToken(value: string) {
@@ -17,6 +16,7 @@ function buildSiteToken(value: string) {
 }
 
 const QR_DISPLAY_DURATION_MS = 60_000;
+const RECEPTION_VIDEO_URL = "https://www.youtube-nocookie.com/embed/qHz20nBZdLE?autoplay=1&mute=1&loop=1&playlist=qHz20nBZdLE&controls=0&modestbranding=1&playsinline=1&rel=0";
 
 function getWebBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_WEB_BASE_URL;
@@ -69,7 +69,7 @@ function ReceptionQrCard({
         </div>
         <div className="overflow-hidden rounded-[24px] border border-border/70 bg-white p-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {qrDataUrl ? <img src={qrDataUrl} alt={`${title} QR code`} className="mx-auto aspect-square w-full max-w-sm" /> : null}
+          {qrDataUrl ? <img src={qrDataUrl} alt={`${title} QR code`} className="mx-auto aspect-square w-full max-w-[220px]" /> : null}
         </div>
         <p className="break-all text-xs text-muted-foreground">{url}</p>
       </CardContent>
@@ -118,7 +118,6 @@ export default function ReceptionPage() {
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
   const selectedSiteRecord = sites.find((site) => site.name === selectedSite);
-  const siteImage = selectedSiteRecord?.imageUrl || getVisitorSiteImage(selectedSite);
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
 
@@ -177,14 +176,13 @@ export default function ReceptionPage() {
               </div>
 
               <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white">
-                <div className="relative h-64 sm:h-80">
-                  <Image
-                    src={siteImage}
-                    alt={`${selectedSite} building`}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 672px"
-                    className="object-contain"
+                <div className="aspect-video w-full overflow-hidden bg-black">
+                  <iframe
+                    src={RECEPTION_VIDEO_URL}
+                    title="AIHP business introduction"
+                    className="pointer-events-none h-full w-full border-0"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    referrerPolicy="strict-origin-when-cross-origin"
                   />
                 </div>
                 <div className="border-t border-border bg-[#0b1824] p-5">

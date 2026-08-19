@@ -3,7 +3,7 @@
     "name": "AIHP",
     "slug": "visitor-management-system",
     "icon": "./assets/aihp-icon.png",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },

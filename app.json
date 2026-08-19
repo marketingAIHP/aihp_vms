@@ -2,16 +2,21 @@
   "expo": {
     "name": "Visitor Management System",
     "slug": "visitor-management-system",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "vms",
     "android": {
-      "package": "com.aihp.visitormanagementsystem"
+      "package": "com.aihp.visitormanagementsystem",
+      "runtimeVersion": "1.0.1"
     },
     "extra": {
       "eas": {
         "projectId": "7e4cba54-d077-4228-84c9-9d1e10ce76fa"
       }
     },
-    "owner": "aihp"
+    "owner": "aihp",
+    "updates": {
+      "url": "https://u.expo.dev/7e4cba54-d077-4228-84c9-9d1e10ce76fa"
+    },
+    "ios": {}
   }
 }

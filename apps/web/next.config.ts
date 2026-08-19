@@ -6,6 +6,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
+  "frame-src https://www.youtube-nocookie.com",
   "form-action 'self'",
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
@@ -38,7 +39,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Referrer-Policy",
-            value: "no-referrer"
+            value: "strict-origin-when-cross-origin"
           },
           {
             key: "X-Content-Type-Options",

@@ -71,26 +71,24 @@ export default function AdminReportsPage() {
           totalSiteManagers: number;
         };
         reportRows: Array<Record<string, unknown>>;
+        filterOptions: {
+          sites: Array<{ id: string; name: string }>;
+          siteManagers: Array<{ id: string; name: string; siteName: string }>;
+        };
       }>("/api/admin/reports"),
   });
 
   const sourceRows = useMemo(() => data?.reportRows ?? [], [data?.reportRows]);
-  const sites = useMemo(
-    () => Array.from(new Set(sourceRows.map((row) => String(row.siteName ?? "")).filter(Boolean))).sort(),
-    [sourceRows]
-  );
+  const sites = data?.filterOptions.sites ?? [];
   const managers = useMemo(
-    () => Array.from(new Set(sourceRows
-      .filter((row) => site === "all" || row.siteName === site)
-      .map((row) => String(row.siteManagerName ?? ""))
-      .filter(Boolean))).sort(),
-    [site, sourceRows]
+    () => (data?.filterOptions.siteManagers ?? []).filter((manager) => site === "all" || manager.siteName === site),
+    [data?.filterOptions.siteManagers, site]
   );
   const filteredSourceRows = useMemo(() => sourceRows.filter((row) => {
     const date = reportDate(row);
     if (!date) return false;
     if (site !== "all" && row.siteName !== site) return false;
-    if (siteManager !== "all" && row.siteManagerName !== siteManager) return false;
+    if (siteManager !== "all" && row.siteManagerId !== siteManager) return false;
     if (status !== "all" && row.status !== status) return false;
     if (period === "monthly") return date.getFullYear() === Number(year) && date.getMonth() === Number(month);
     if (period === "quarterly") return date.getFullYear() === Number(year) && Math.floor(date.getMonth() / 3) + 1 === Number(quarter);
@@ -124,7 +122,9 @@ export default function AdminReportsPage() {
       "Report Type": `${period.charAt(0).toUpperCase()}${period.slice(1)} Visitor Report`,
       "Period / Date Range": period === "custom" ? `${fromDate} to ${toDate}` : periodLabel,
       Site: site === "all" ? "All Sites" : site,
-      "Site Manager / Employee": siteManager === "all" ? "All Site Managers" : siteManager,
+      "Site Manager / Employee": siteManager === "all"
+        ? "All Site Managers"
+        : managers.find((manager) => manager.id === siteManager)?.name ?? siteManager,
       Status: status === "all" ? "All Statuses" : status.replaceAll("_", " "),
       "Generated At": new Date().toLocaleString(),
       "Total Records": exportRows.length,
@@ -154,8 +154,8 @@ export default function AdminReportsPage() {
           {period === "quarterly" ? <Select value={quarter} onValueChange={setQuarter}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1, 2, 3, 4].map((value) => <SelectItem key={value} value={String(value)}>Q{value}</SelectItem>)}</SelectContent></Select> : null}
           {period !== "custom" ? <Select value={year} onValueChange={setYear}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Array.from({ length: 8 }, (_, index) => now.getFullYear() - index).map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select> : null}
           {period === "custom" ? <><Input className="h-11 w-full" aria-label="From date" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /><Input className="h-11 w-full" aria-label="To date" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></> : null}
-          <Select value={site} onValueChange={(value) => { setSite(value); setSiteManager("all"); }}><SelectTrigger><SelectValue placeholder="Site" /></SelectTrigger><SelectContent><SelectItem value="all">All Sites</SelectItem>{sites.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
-          <Select value={siteManager} onValueChange={setSiteManager}><SelectTrigger><SelectValue placeholder="Site Manager" /></SelectTrigger><SelectContent><SelectItem value="all">All Site Managers</SelectItem>{managers.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select>
+          <Select value={site} onValueChange={(value) => { setSite(value); setSiteManager("all"); }}><SelectTrigger><SelectValue placeholder="Site" /></SelectTrigger><SelectContent><SelectItem value="all">All Sites</SelectItem>{sites.map((option) => <SelectItem key={option.id} value={option.name}>{option.name}</SelectItem>)}</SelectContent></Select>
+          <Select value={siteManager} onValueChange={setSiteManager}><SelectTrigger><SelectValue placeholder="Site Manager" /></SelectTrigger><SelectContent><SelectItem value="all">All Site Managers</SelectItem>{managers.map((manager) => <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>)}</SelectContent></Select>
           <Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All Statuses</SelectItem><SelectItem value="CHECKED_IN">Checked In</SelectItem><SelectItem value="CHECKED_OUT">Checked Out</SelectItem></SelectContent></Select>
         </CardContent>
       </Card>

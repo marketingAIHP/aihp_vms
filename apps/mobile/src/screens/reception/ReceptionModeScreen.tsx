@@ -1,10 +1,11 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { QrCode } from "lucide-react-native";
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { WebView } from "react-native-webview";
 import QRCode from "qrcode";
-import { SvgUri, SvgXml } from "react-native-svg";
+import { SvgXml } from "react-native-svg";
 import { AIHPLogo } from "../../components/branding/AIHPLogo";
 import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
@@ -47,38 +48,13 @@ const fallbackSites = [
 ] as const;
 
 const QR_DISPLAY_DURATION_MS = 60_000;
+const RECEPTION_VIDEO_URL = "https://www.youtube-nocookie.com/embed/qHz20nBZdLE?autoplay=1&mute=1&loop=1&playlist=qHz20nBZdLE&controls=0&modestbranding=1&playsinline=1&rel=0";
 
 type ReceptionSite = {
   address?: string;
   id: string;
   imageUrl?: string;
   name: string;
-};
-
-const fallbackSiteImages: Record<string, string> = {
-  "AIHP Palms": "Aihp-Plams.webp",
-  "BPTP Centra 1": "bptp-centra.webp",
-  "Eros City Square": "Eros-City-Square.webp",
-  "Silverton Tower": "Silverton-Tower.webp",
-  "SPAZE BUSINESS PARK": "Spaze-Business-Park.webp",
-  "Splendor Spectrum": "SPLENDOR-SPECTRUM-1.webp",
-  "Unitech Business Zone": "UNITECH-BUSINESS-ZONE-1-e1753089211223.webp",
-  "M3M URBANA": "M3M-Urbana.webp",
-  "Pioneer Urban Square": "Pioneer-Urban-Square.webp",
-  "Palm Spring Plaza": "Palm-Spring-Plaza.webp",
-  "Ocus Technopolis": "Ocus-Technopolis.webp",
-  Veritas: "veritas_.webp",
-  "MGF Metropolis": "mgf_.webp",
-  "AIHP SCO-27": "sco.webp",
-  "AIHP Executive Center": "executive.webp",
-  "AIHP Broadway": "broadway_gallery-5-qvjd8zhinuyd7bappd5sumligsn0pjpcuy0l6fj4xs.webp",
-  "AIHP Skyline": "skyline.webp",
-  "Good Earth City Center Mall": "Good-Earth.webp",
-  "Spaze ITech Park": "Spaze-ITech-Park.webp",
-  "AIHP Atrium": "Atrium1.webp",
-  "AIHP Spectra": "spectra.webp",
-  "AIHP ONE": "AIHP%20One.jpeg",
-  "PT NO: 390": "AIHP-390-91-1536x864.webp"
 };
 
 function buildSiteToken(value: string) {
@@ -199,9 +175,6 @@ function ReceptionModeContent() {
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
   const selectedSiteRecord = siteRecords.find((site) => site.name === selectedSite);
-  const fallbackImage = fallbackSiteImages[selectedSite];
-  const siteImageUrl = selectedSiteRecord?.imageUrl
-    || (fallbackImage && baseUrl ? `${baseUrl}/site-images/${fallbackImage}` : "");
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
   const hasSites = availableSites.length > 0;
@@ -256,11 +229,15 @@ function ReceptionModeContent() {
                   <>
                     <View style={styles.siteImageCard}>
                       <View style={styles.siteImageCanvas}>
-                        {siteImageUrl ? (
-                          <Image source={{ uri: siteImageUrl }} style={styles.siteImage} resizeMode="contain" />
-                        ) : (
-                          <SvgUri uri={`${baseUrl}/site-images/default-site.svg`} width="100%" height="100%" />
-                        )}
+                        <WebView
+                          source={{ uri: RECEPTION_VIDEO_URL }}
+                          style={styles.siteVideo}
+                          allowsInlineMediaPlayback
+                          javaScriptEnabled
+                          mediaPlaybackRequiresUserAction={false}
+                          scrollEnabled={false}
+                          setSupportMultipleWindows={false}
+                        />
                       </View>
                       <View style={styles.siteCaption}>
                         <Text style={styles.siteCaptionLabel}>SELECTED SITE</Text>
@@ -425,12 +402,12 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   siteImageCanvas: {
-    alignItems: "center",
-    backgroundColor: colors.pureWhite,
-    height: 250,
-    justifyContent: "center"
+    aspectRatio: 16 / 9,
+    backgroundColor: colors.navyInk,
+    overflow: "hidden"
   },
-  siteImage: {
+  siteVideo: {
+    backgroundColor: colors.navyInk,
     height: "100%",
     width: "100%"
   },
@@ -511,8 +488,9 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   qrCanvas: {
-    width: "100%",
-    aspectRatio: 1,
+    width: 240,
+    height: 240,
+    alignSelf: "center",
     borderRadius: radius.lg,
     backgroundColor: colors.pureWhite,
     padding: spacing.md,
