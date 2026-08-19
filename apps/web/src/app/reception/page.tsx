@@ -16,7 +16,7 @@ function buildSiteToken(value: string) {
 }
 
 const QR_DISPLAY_DURATION_MS = 60_000;
-const RECEPTION_VIDEO_URL = "https://www.youtube-nocookie.com/embed/qHz20nBZdLE?autoplay=1&mute=1&loop=1&playlist=qHz20nBZdLE&controls=0&modestbranding=1&playsinline=1&rel=0";
+const RECEPTION_VIDEO_URL = "/videos/aihp-managed-workspaces.mp4";
 
 function getWebBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_WEB_BASE_URL;
@@ -117,13 +117,12 @@ export default function ReceptionPage() {
   }, []);
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
-  const selectedSiteRecord = sites.find((site) => site.name === selectedSite);
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
 
   return (
-    <main className="min-h-screen bg-[#051622] px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+    <main className="min-h-screen bg-[#051622] px-3 py-5 sm:px-5 sm:py-8 lg:px-8">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
         <div className="flex items-center justify-between">
           {activeQr ? (
             <Button type="button" variant="ghost" className="px-0 text-primary hover:bg-transparent hover:text-primary" onClick={() => setActiveQr(null)}>
@@ -175,22 +174,18 @@ export default function ReceptionPage() {
                 </Select>
               </div>
 
-              <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white">
-                <div className="aspect-video w-full overflow-hidden bg-black">
-                  <iframe
+              <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-lg">
+                <div className="aspect-video w-full overflow-hidden bg-black lg:aspect-[16/8]">
+                  <video
                     src={RECEPTION_VIDEO_URL}
-                    title="AIHP business introduction"
-                    className="pointer-events-none h-full w-full border-0"
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    referrerPolicy="strict-origin-when-cross-origin"
+                    className="h-full w-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    aria-label="AIHP managed workspaces introduction"
                   />
-                </div>
-                <div className="border-t border-border bg-[#0b1824] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">Selected Site</p>
-                  <p className="mt-1 text-xl font-bold text-white sm:text-2xl">{selectedSite}</p>
-                  {selectedSiteRecord?.address ? (
-                    <p className="mt-1 text-sm text-white/70">{selectedSiteRecord.address}</p>
-                  ) : null}
                 </div>
               </div>
 

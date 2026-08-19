@@ -2,11 +2,16 @@
   "expo": {
     "name": "Visitor Management System",
     "slug": "visitor-management-system",
+    "icon": "./apps/mobile/assets/aihp-icon.png",
     "version": "1.0.1",
     "scheme": "vms",
     "android": {
       "package": "com.aihp.visitormanagementsystem",
-      "runtimeVersion": "1.0.1"
+      "runtimeVersion": "1.0.1",
+      "adaptiveIcon": {
+        "foregroundImage": "./apps/mobile/assets/aihp-icon-foreground.png",
+        "backgroundColor": "#051622"
+      }
     },
     "extra": {
       "eas": {

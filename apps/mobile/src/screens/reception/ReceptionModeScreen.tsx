@@ -48,7 +48,6 @@ const fallbackSites = [
 ] as const;
 
 const QR_DISPLAY_DURATION_MS = 60_000;
-const RECEPTION_VIDEO_URL = "https://www.youtube-nocookie.com/embed/qHz20nBZdLE?autoplay=1&mute=1&loop=1&playlist=qHz20nBZdLE&controls=0&modestbranding=1&playsinline=1&rel=0";
 
 type ReceptionSite = {
   address?: string;
@@ -174,7 +173,6 @@ function ReceptionModeContent() {
   }, [activeQr]);
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
-  const selectedSiteRecord = siteRecords.find((site) => site.name === selectedSite);
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
   const hasSites = availableSites.length > 0;
@@ -230,7 +228,9 @@ function ReceptionModeContent() {
                     <View style={styles.siteImageCard}>
                       <View style={styles.siteImageCanvas}>
                         <WebView
-                          source={{ uri: RECEPTION_VIDEO_URL }}
+                          source={{
+                            html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><style>*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#000;overflow:hidden}video{width:100%;height:100%;object-fit:cover}</style></head><body><video src="${baseUrl}/videos/aihp-managed-workspaces.mp4" autoplay loop muted playsinline webkit-playsinline></video></body></html>`
+                          }}
                           style={styles.siteVideo}
                           allowsInlineMediaPlayback
                           javaScriptEnabled
@@ -238,11 +238,6 @@ function ReceptionModeContent() {
                           scrollEnabled={false}
                           setSupportMultipleWindows={false}
                         />
-                      </View>
-                      <View style={styles.siteCaption}>
-                        <Text style={styles.siteCaptionLabel}>SELECTED SITE</Text>
-                        <Text style={styles.siteCaptionTitle}>{selectedSite}</Text>
-                        {selectedSiteRecord?.address ? <Text style={styles.siteAddress}>{selectedSiteRecord.address}</Text> : null}
                       </View>
                     </View>
                     <View style={styles.actionRow}>
@@ -410,29 +405,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navyInk,
     height: "100%",
     width: "100%"
-  },
-  siteCaption: {
-    backgroundColor: "#0B1824",
-    borderTopColor: colors.border,
-    borderTopWidth: 1,
-    padding: spacing.md
-  },
-  siteCaptionLabel: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.8
-  },
-  siteCaptionTitle: {
-    color: colors.pureWhite,
-    fontSize: 21,
-    fontWeight: "800",
-    marginTop: 4
-  },
-  siteAddress: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 13,
-    marginTop: 4
   },
   actionRow: {
     flexDirection: "row",
