@@ -29,6 +29,7 @@
     "expo-router": "~56.2.19",
     "expo-secure-store": "~56.0.4",
     "expo-updates": "~56.0.25",
+    "expo-video": "~56.1.4",
     "lucide-react-native": "^1.21.0",
     "nativewind": "^4.1.23",
     "qrcode": "^1.5.4",

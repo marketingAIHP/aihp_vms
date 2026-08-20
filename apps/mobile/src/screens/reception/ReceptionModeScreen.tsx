@@ -1,9 +1,9 @@
 import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import { QrCode } from "lucide-react-native";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { WebView } from "react-native-webview";
 import QRCode from "qrcode";
 import { SvgXml } from "react-native-svg";
 import { AIHPLogo } from "../../components/branding/AIHPLogo";
@@ -48,6 +48,9 @@ const fallbackSites = [
 ] as const;
 
 const QR_DISPLAY_DURATION_MS = 60_000;
+// React Native resolves bundled binary assets through a static require.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const receptionVideoSource = require("../../../assets/aihp-managed-workspaces.mp4");
 
 type ReceptionSite = {
   address?: string;
@@ -127,6 +130,10 @@ function ReceptionModeContent() {
   const [selectedSite, setSelectedSite] = useState("");
   const [siteRecords, setSiteRecords] = useState<ReceptionSite[]>([]);
   const [sitePickerVisible, setSitePickerVisible] = useState(false);
+  const videoPlayer = useVideoPlayer(receptionVideoSource, (player) => {
+    player.loop = true;
+    player.muted = true;
+  });
   const baseUrl = useMemo(() => getWebBaseUrl(), []);
   const availableSites = useMemo(
     () => (siteRecords.length
@@ -171,6 +178,15 @@ function ReceptionModeContent() {
 
     return () => clearTimeout(timer);
   }, [activeQr]);
+
+  useEffect(() => {
+    if (baseUrl && selectedSite && !activeQr) {
+      videoPlayer.play();
+      return;
+    }
+
+    videoPlayer.pause();
+  }, [activeQr, baseUrl, selectedSite, videoPlayer]);
 
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
@@ -227,16 +243,12 @@ function ReceptionModeContent() {
                   <>
                     <View style={styles.siteImageCard}>
                       <View style={styles.siteImageCanvas}>
-                        <WebView
-                          source={{
-                            html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><style>*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:#000;overflow:hidden}video{width:100%;height:100%;object-fit:cover}</style></head><body><video src="${baseUrl}/videos/aihp-managed-workspaces.mp4" autoplay loop muted playsinline webkit-playsinline></video></body></html>`
-                          }}
+                        <VideoView
+                          player={videoPlayer}
                           style={styles.siteVideo}
-                          allowsInlineMediaPlayback
-                          javaScriptEnabled
-                          mediaPlaybackRequiresUserAction={false}
-                          scrollEnabled={false}
-                          setSupportMultipleWindows={false}
+                          contentFit="cover"
+                          nativeControls={false}
+                          surfaceType="textureView"
                         />
                       </View>
                     </View>
