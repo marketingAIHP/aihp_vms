@@ -18,7 +18,7 @@ import {
 
 export function AdminDashboard() {
   const { logout, session } = useAuth();
-  const { error, loading, notifications, refresh, visits } = useVmsData();
+  const { auditLogs, error, loading, masterData, notifications, refresh, users, visits } = useVmsData();
 
   const totalVisitors = useMemo(() => visits.length, [visits]);
   const todayVisitors = useMemo(() => countVisitsForToday(visits), [visits]);
@@ -26,6 +26,7 @@ export function AdminDashboard() {
   const checkedOutVisitors = useMemo(() => getTodayVisitHistory(visits), [visits]);
   const recentCheckIns = useMemo(() => getRecentCheckIns(visits).slice(0, 5), [visits]);
   const todayHistory = useMemo(() => getTodayVisitHistory(visits).slice(0, 5), [visits]);
+  const activeSiteManagers = useMemo(() => users.filter((user) => user.role === "site_manager" && user.status === "active").length, [users]);
 
   if (!session) {
     return null;
@@ -78,6 +79,24 @@ export function AdminDashboard() {
             onPress={() => router.push("/admin-visits")}
           />
           <StatsCard
+            iconColor={colors.primary}
+            iconBackgroundColor="#FCE8E8"
+            icon="sites"
+            label="Total Sites"
+            value={masterData.buildings.length}
+            trend="Configured active sites"
+            onPress={() => router.push("/admin-sites")}
+          />
+          <StatsCard
+            iconColor={colors.mutedTeal}
+            iconBackgroundColor="#E6F7FA"
+            icon="users"
+            label="Site Managers"
+            value={activeSiteManagers}
+            trend="Active site manager accounts"
+            onPress={() => router.push("/admin-users")}
+          />
+          <StatsCard
             iconColor={colors.mutedTeal}
             iconBackgroundColor="#E6F7FA"
             icon="active"
@@ -108,6 +127,14 @@ export function AdminDashboard() {
 
         <View style={styles.actions}>
           <ActionCard
+            title="Sites"
+            subtitle="View all configured and active building sites."
+            icon="sites"
+            accentBackgroundColor="#E9EEF6"
+            cardBackgroundColor="#F8FAFD"
+            onPress={() => router.push("/admin-sites")}
+          />
+          <ActionCard
             title="Users"
             subtitle="Search, edit, and manage site manager accounts."
             icon="users"
@@ -131,6 +158,14 @@ export function AdminDashboard() {
             cardBackgroundColor="#FFFCF8"
             onPress={() => router.push("/admin-qr-management")}
           />
+          <ActionCard
+            title="Settings"
+            subtitle="Manage application preferences and administrative options."
+            icon="settings"
+            accentBackgroundColor="#E9EEF6"
+            cardBackgroundColor="#F8FAFD"
+            onPress={() => router.push("/admin-settings")}
+          />
         </View>
 
         <VisitListCard
@@ -148,6 +183,21 @@ export function AdminDashboard() {
           onViewAll={() => router.push("/admin-visit-history")}
           variant="history"
         />
+
+        <View style={styles.activityCard}>
+          <Text style={styles.sectionTitle}>Recent Visitor Activity</Text>
+          {auditLogs.slice(0, 8).map((item) => (
+            <View key={item.id} style={styles.activityRow}>
+              <View style={styles.activityCopy}>
+                <Text style={styles.activityAction}>{item.action.replaceAll("_", " ")}</Text>
+                <Text style={styles.activityDetail}>{item.detail}</Text>
+                <Text style={styles.activityActor}>{item.actorName}</Text>
+              </View>
+              <Text style={styles.activityTime}>{new Date(item.createdAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}</Text>
+            </View>
+          ))}
+          {auditLogs.length === 0 ? <Text style={styles.feedbackText}>No recent visitor activity.</Text> : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -213,5 +263,26 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.sm
-  }
+  },
+  activityCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm
+  },
+  activityRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
+  },
+  activityCopy: { flex: 1, gap: 2 },
+  activityAction: { color: colors.textPrimary, fontSize: 13, fontWeight: "800" },
+  activityDetail: { color: colors.secondaryText, fontSize: 12, lineHeight: 17 },
+  activityActor: { color: colors.primary, fontSize: 11, fontWeight: "700" },
+  activityTime: { color: colors.secondaryText, fontSize: 11, maxWidth: 105, textAlign: "right" }
 });

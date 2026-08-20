@@ -138,7 +138,7 @@ export default function AdminSitesPage() {
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Edit Site</DialogTitle>
-            <DialogDescription>Update the site name, address, and reception photograph.</DialogDescription>
+            <DialogDescription>Update the site name, address, and building photograph.</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-5">

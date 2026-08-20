@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute";
 import { useVmsData } from "../../hooks/use-vms-data";
+import { apiClient } from "../../lib/api-client";
 import { colors, spacing } from "../../theme";
 import type { VisitRecord } from "../../types/vms";
-import { AppInput, Badge } from "../../ui/components";
+import { AppButton, AppInput, Badge } from "../../ui/components";
 import { getRecentCheckIns } from "./admin-utils";
 
 function tone(status: VisitRecord["status"]): "neutral" | "info" | "success" | "warning" | "danger" {
@@ -44,6 +45,9 @@ function AdminVisitRecordsContent({
   const [status, setStatus] = useState<VisitRecord["status"] | "">("");
   const [site, setSite] = useState("");
   const [openFilter, setOpenFilter] = useState<"status" | "site" | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<VisitRecord | null>(null);
+  const [editNotes, setEditNotes] = useState("");
+  const [actionPending, setActionPending] = useState(false);
   const sourceRecords = useMemo(() => filter(visits), [filter, visits]);
   const sites = useMemo(
     () => Array.from(new Set(sourceRecords.map((record) => record.building).filter(Boolean))).sort(),
@@ -61,6 +65,43 @@ function AdminVisitRecordsContent({
         .includes(normalized);
     });
   }, [query, site, sourceRecords, status]);
+
+  function openEditor(visit: VisitRecord) {
+    setSelectedVisit(visit);
+    setEditNotes(visit.notes ?? "");
+  }
+
+  async function saveVisitorNotes() {
+    if (!selectedVisit || !editNotes.trim()) return;
+    setActionPending(true);
+    try {
+      await apiClient.updateVisitNotes(selectedVisit.id, editNotes);
+      await refresh();
+      setSelectedVisit(null);
+      Alert.alert("Visitor updated", "Visitor notes were saved successfully.");
+    } catch (actionError) {
+      Alert.alert("Update failed", actionError instanceof Error ? actionError.message : "Unable to update visitor.");
+    } finally {
+      setActionPending(false);
+    }
+  }
+
+  function confirmCheckOut(visit: VisitRecord) {
+    Alert.alert("Check out visitor?", `Complete check-out for ${visit.visitorName}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Check Out",
+        onPress: () => {
+          setActionPending(true);
+          void apiClient.checkOutVisit(visit.id)
+            .then(refresh)
+            .then(() => Alert.alert("Check-out complete", `${visit.visitorName} has been checked out.`))
+            .catch((actionError: unknown) => Alert.alert("Check-out failed", actionError instanceof Error ? actionError.message : "Unable to check out visitor."))
+            .finally(() => setActionPending(false));
+        }
+      }
+    ]);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -117,6 +158,12 @@ function AdminVisitRecordsContent({
               {new Date(item.createdAt).toLocaleDateString()} •{" "}
               {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </Text>
+            <View style={styles.actionRow}>
+              <AppButton title="Edit" variant="ghost" style={styles.actionButton} onPress={() => openEditor(item)} />
+              {item.status === "CHECKED_IN" ? (
+                <AppButton title="Check Out" style={styles.actionButton} disabled={actionPending} onPress={() => confirmCheckOut(item)} />
+              ) : null}
+            </View>
           </View>
         )}
       />
@@ -143,6 +190,26 @@ function AdminVisitRecordsContent({
             />
           </Pressable>
         </Pressable>
+      </Modal>
+
+      <Modal animationType="fade" transparent visible={Boolean(selectedVisit)} onRequestClose={() => setSelectedVisit(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit visitor details</Text>
+            <Text style={styles.name}>{selectedVisit?.visitorName}</Text>
+            <AppInput
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              value={editNotes}
+              onChangeText={setEditNotes}
+              placeholder="Update notes or visit comments"
+              style={styles.notesInput}
+            />
+            <AppButton title={actionPending ? "Saving..." : "Save Changes"} disabled={actionPending || !editNotes.trim()} onPress={() => void saveVisitorNotes()} />
+            <AppButton title="Cancel" variant="ghost" disabled={actionPending} onPress={() => setSelectedVisit(null)} />
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -291,5 +358,16 @@ const styles = StyleSheet.create({
     color: colors.secondaryText,
     fontSize: 13,
     lineHeight: 18
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm
+  },
+  actionButton: {
+    flex: 1
+  },
+  notesInput: {
+    minHeight: 120
   }
 });

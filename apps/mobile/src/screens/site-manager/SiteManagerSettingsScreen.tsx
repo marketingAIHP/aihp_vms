@@ -18,7 +18,7 @@ export function SiteManagerSettingsScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Visitor Policy</Text>
           <Text style={styles.copy}>
-            Visitors must complete self-service registration using the reception check-in QR and must use the checkout QR before leaving the site.
+            Visitors must complete self-service registration using the check-in QR and must use the check-out QR before leaving the site.
           </Text>
         </View>
 

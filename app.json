@@ -3,11 +3,11 @@
     "name": "Visitor Management System",
     "slug": "visitor-management-system",
     "icon": "./apps/mobile/assets/aihp-icon.png",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "scheme": "vms",
     "android": {
       "package": "com.aihp.visitormanagementsystem",
-      "runtimeVersion": "1.0.1",
+      "runtimeVersion": "1.0.2",
       "adaptiveIcon": {
         "foregroundImage": "./apps/mobile/assets/aihp-icon-foreground.png",
         "backgroundColor": "#051622"
@@ -22,6 +22,9 @@
     "updates": {
       "url": "https://u.expo.dev/7e4cba54-d077-4228-84c9-9d1e10ce76fa"
     },
+    "plugins": [
+      "expo-video"
+    ],
     "ios": {}
   }
 }

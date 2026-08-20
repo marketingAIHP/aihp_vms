@@ -288,7 +288,7 @@ export const apiClient = {
     const session = await this.login(email, password);
     if (session.role !== "admin") {
       await this.logout();
-      throw new Error("Only an admin account can open Reception Mode.");
+      throw new Error("Only an admin account can open Visitor Check-In / Check-Out.");
     }
     return session;
   },
@@ -306,6 +306,17 @@ export const apiClient = {
 
   async listVisits() {
     return loadVisits();
+  },
+
+  async updateVisitNotes(visitId: string, notes: string) {
+    await invokeWebApi(`/api/admin/visitors/${visitId}`, {
+      body: JSON.stringify({ rejectionReason: notes.trim() }),
+      method: "PATCH"
+    });
+  },
+
+  async checkOutVisit(visitId: string) {
+    await invokeWebApi(`/api/visits/${visitId}/check-out`, { method: "POST" });
   },
 
   async getNotifications(userId: string, role: SessionRole) {
@@ -499,4 +510,18 @@ async function extractFunctionErrorMessage(error: unknown) {
   } catch {
     return "";
   }
+}
+
+async function invokeWebApi(path: string, init: RequestInit) {
+  const baseUrl = process.env.EXPO_PUBLIC_WEB_BASE_URL?.replace(/\/$/, "");
+  if (!baseUrl) throw new Error("The web service URL is not configured.");
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Your session expired. Please sign in again.");
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, ...init.headers }
+  });
+  const result = await response.json().catch(() => ({})) as { message?: string };
+  if (!response.ok) throw new Error(result.message ?? "Unable to complete the request.");
+  return result;
 }

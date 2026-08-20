@@ -88,7 +88,7 @@ const DEFAULT_SETTINGS: SettingsRecord = {
   supportEmail: "support@aihpvms.local",
   notificationChannels: ["email", "sms", "whatsapp"],
   visitorPolicy:
-    "Walk-in visitors must register using the reception QR. Check-in and check-out are tracked against site access rules.",
+    "Walk-in visitors must register using the check-in QR. Check-in and check-out are tracked against site access rules.",
   securityMode: "strict"
 };
 

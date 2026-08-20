@@ -418,15 +418,15 @@ function CheckInPageContent() {
   if (showSuccess) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#051622] px-6 py-12">
-        <Card className="w-full max-w-2xl rounded-[28px] border-border/70 shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle>Thank You!</CardTitle>
-            <CardDescription>Your Check-In has been completed successfully.</CardDescription>
+        <Card className="w-full max-w-3xl rounded-[32px] border-border/70 shadow-xl">
+          <CardHeader className="space-y-3 py-8 text-center">
+            <CardTitle className="text-4xl font-extrabold sm:text-5xl">Thank You!</CardTitle>
+            <CardDescription className="text-base sm:text-lg">Your check-in has been completed successfully.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-center">
-            <p className="text-base text-foreground">Please proceed to the reception.</p>
-            <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-              Please check out before leaving. Do not forget to complete your check-out.
+          <CardContent className="space-y-5 px-6 pb-8 text-center sm:px-10">
+            <p className="text-lg font-medium text-foreground sm:text-xl">You may now proceed with your visit.</p>
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-base font-semibold text-amber-900">
+              Please remember to check out before leaving the premises.
             </div>
             <p className="text-sm text-muted-foreground">A new check-in form will be available in 30 seconds.</p>
           </CardContent>

@@ -1,15 +1,16 @@
 import type { LucideIcon } from "lucide-react-native";
-import { Activity, Clock3, ShieldCheck, Users } from "lucide-react-native";
+import { Activity, Building2, Clock3, ShieldCheck, Users } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radius, spacing } from "../../theme";
 
-type StatsIconName = "visits" | "active" | "pending" | "users";
+type StatsIconName = "visits" | "active" | "pending" | "users" | "sites";
 
 const iconMap: Record<StatsIconName, LucideIcon> = {
   visits: Users,
   active: Activity,
   pending: Clock3,
-  users: ShieldCheck
+  users: ShieldCheck,
+  sites: Building2
 };
 
 export function StatsCard({

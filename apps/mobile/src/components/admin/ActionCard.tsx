@@ -1,16 +1,17 @@
 import type { LucideIcon } from "lucide-react-native";
-import { ChevronRight, FileBarChart2, QrCode, Settings, Users, UsersRound } from "lucide-react-native";
+import { Building2, ChevronRight, FileBarChart2, QrCode, Settings, Users, UsersRound } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, spacing } from "../../theme";
 
-type ActionIconName = "users" | "reports" | "qr" | "visitors" | "settings";
+type ActionIconName = "users" | "reports" | "qr" | "visitors" | "settings" | "sites";
 
 const iconMap: Record<ActionIconName, LucideIcon> = {
   users: UsersRound,
   reports: FileBarChart2,
   qr: QrCode,
   visitors: Users,
-  settings: Settings
+  settings: Settings,
+  sites: Building2
 };
 
 export function ActionCard({

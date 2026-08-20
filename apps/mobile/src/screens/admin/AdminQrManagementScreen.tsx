@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Modal, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ProtectedRoute } from "../../components/auth/ProtectedRoute";
 import { useVmsData } from "../../hooks/use-vms-data";
@@ -25,12 +25,26 @@ function AdminQrManagementContent() {
   const { masterData } = useVmsData();
   const [selectedSite, setSelectedSite] = useState("");
   const [sitePickerVisible, setSitePickerVisible] = useState(false);
+  const [availableSites, setAvailableSites] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!selectedSite && masterData.buildings[0]) {
-      setSelectedSite(masterData.buildings[0]);
+    setAvailableSites(masterData.buildings);
+    if (!baseUrl) return;
+    let active = true;
+    void fetch(`${baseUrl}/api/public/sites`)
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload: { sites?: Array<{ name: string }> }) => {
+        if (active && payload.sites?.length) setAvailableSites(payload.sites.map((site) => site.name));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [masterData.buildings]);
+
+  useEffect(() => {
+    if (!selectedSite && availableSites[0]) {
+      setSelectedSite(availableSites[0]);
     }
-  }, [masterData.buildings, selectedSite]);
+  }, [availableSites, selectedSite]);
 
   const checkInUrl = useMemo(() => buildUrl("checkin", selectedSite || "main"), [selectedSite]);
   const checkOutUrl = useMemo(() => buildUrl("checkout", selectedSite || "main"), [selectedSite]);
@@ -40,10 +54,6 @@ function AdminQrManagementContent() {
       title,
       message: url
     });
-  }
-
-  async function openUrl(url: string) {
-    await Linking.openURL(url);
   }
 
   return (
@@ -74,7 +84,6 @@ function AdminQrManagementContent() {
               <Text style={styles.url}>{checkInUrl}</Text>
               <View style={styles.buttonRow}>
                 <AppButton title="Share URL" onPress={() => void shareUrl("Check-In URL", checkInUrl)} />
-                <AppButton title="Test Check-In" variant="secondary" onPress={() => void openUrl(checkInUrl)} />
               </View>
             </View>
 
@@ -83,7 +92,6 @@ function AdminQrManagementContent() {
               <Text style={styles.url}>{checkOutUrl}</Text>
               <View style={styles.buttonRow}>
                 <AppButton title="Share URL" onPress={() => void shareUrl("Check-Out URL", checkOutUrl)} />
-                <AppButton title="Test Check-Out" variant="secondary" onPress={() => void openUrl(checkOutUrl)} />
               </View>
             </View>
           </>
@@ -97,20 +105,14 @@ function AdminQrManagementContent() {
           </View>
         )}
 
-        <View style={styles.noteCard}>
-          <Text style={styles.noteTitle}>Reception tablet</Text>
-          <Text style={styles.noteText}>
-            Use the dedicated Reception Mode screen from login when you want the tablet to stay open with both visitor QR codes visible.
-          </Text>
-        </View>
       </View>
 
       <Modal animationType="slide" transparent visible={sitePickerVisible} onRequestClose={() => setSitePickerVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Select Site</Text>
-            <View>
-              {masterData.buildings.map((site) => (
+            <ScrollView>
+              {availableSites.map((site) => (
                 <Pressable
                   key={site}
                   style={[styles.optionRow, site === selectedSite && styles.optionRowActive]}
@@ -122,7 +124,7 @@ function AdminQrManagementContent() {
                   <Text style={[styles.optionText, site === selectedSite && styles.optionTextActive]}>{site}</Text>
                 </Pressable>
               ))}
-            </View>
+            </ScrollView>
             <AppButton title="Close" variant="ghost" onPress={() => setSitePickerVisible(false)} />
           </View>
         </View>

@@ -5,7 +5,7 @@ import { mergeVisibleNotesWithProtectedMetadata } from "@/lib/server/visit-note-
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireApiRole("admin");
+    const session = await requireApiRole("admin", request);
     const body = (await request.json()) as { rejectionReason?: string };
     const notes = body.rejectionReason?.trim();
     const { id } = await params;

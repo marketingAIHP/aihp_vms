@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { getApiSession } from "@/lib/route-auth";
 import { createAuditLog, createNotification, fetchProfileByEmail, fetchVisits, getSupabaseAdminClient } from "@/lib/server/live-data";
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession();
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getApiSession(request);
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
