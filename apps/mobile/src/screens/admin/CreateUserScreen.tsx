@@ -40,8 +40,6 @@ function CreateUserContent() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
   const [siteName, setSiteName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -57,8 +55,6 @@ function CreateUserContent() {
 
     setFullName(existingUser.name);
     setEmail(existingUser.email);
-    setMobileNumber(existingUser.mobileNumber);
-    setEmployeeId(existingUser.employeeId);
     setSiteName(existingUser.siteName);
   }, [existingUser]);
 
@@ -114,9 +110,9 @@ function CreateUserContent() {
       if (isEditMode && existingUser) {
         await apiClient.updateManagedUser({
           email,
-          employeeId,
+          employeeId: "",
           fullName,
-          mobileNumber,
+          mobileNumber: "",
           siteName,
           userId: existingUser.id
         });
@@ -127,9 +123,9 @@ function CreateUserContent() {
       } else {
         await apiClient.createManagedUser({
           email,
-          employeeId,
+          employeeId: "",
           fullName,
-          mobileNumber,
+          mobileNumber: "",
           password,
           role: "site_manager",
           siteName
@@ -161,7 +157,7 @@ function CreateUserContent() {
     ? "Change Password"
     : isEditMode
       ? "Edit User"
-      : "Create User";
+      : "Create Site Manager";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -182,9 +178,7 @@ function CreateUserContent() {
             <View style={styles.card}>
               <Text style={styles.sectionLabel}>Site Manager Details</Text>
               <AppInput value={fullName} onChangeText={setFullName} placeholder="Full Name" />
-              <AppInput value={employeeId} onChangeText={setEmployeeId} placeholder="Employee ID" />
               <AppInput value={email} onChangeText={setEmail} placeholder="Email" autoCapitalize="none" keyboardType="email-address" />
-              <AppInput value={mobileNumber} onChangeText={setMobileNumber} placeholder="Mobile Number" keyboardType="phone-pad" />
 
               <Text style={styles.fieldLabel}>Site</Text>
               <Pressable style={styles.selectField} onPress={() => setPickerVisible(true)}>
@@ -199,7 +193,7 @@ function CreateUserContent() {
               {validationError ? <Text style={styles.errorText}>{validationError}</Text> : null}
 
               <AppButton
-                title={submitting ? "Saving..." : isEditMode ? "Save Changes" : "Create User"}
+                title={submitting ? "Saving..." : isEditMode ? "Save Changes" : "Create Site Manager"}
                 onPress={() => void handleSubmit()}
                 disabled={submitting}
               />

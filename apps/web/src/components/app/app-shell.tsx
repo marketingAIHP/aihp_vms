@@ -36,8 +36,6 @@ const siteManagerNav = [
   { href: "/site-manager/dashboard", label: "Dashboard", icon: Home },
   { href: "/site-manager/visitors", label: "Visitors", icon: Users2 },
   { href: "/site-manager/reports", label: "Reports", icon: NotebookTabs },
-  { href: "/site-manager/notifications", label: "Notifications", icon: UserCircle2 },
-  { href: "/site-manager/settings", label: "Settings", icon: Settings2 },
 ];
 
 export function AppShell({

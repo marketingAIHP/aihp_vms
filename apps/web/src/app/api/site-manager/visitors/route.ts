@@ -6,9 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await requireApiRole("site_manager");
     const profile = await fetchProfileByEmail(session.email);
-    const visits = await fetchVisits({
-      siteOrManager: { site: profile?.company_name ?? "", siteManagerId: profile?.id ?? "" }
-    });
+    const visits = await fetchVisits({ site: profile?.company_name ?? "" });
     const search = new URL(request.url).searchParams.get("search")?.trim().toLowerCase();
     const scopedVisits = visits.filter((visit) => {
         if (!search) return true;

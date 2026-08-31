@@ -8,7 +8,7 @@ export async function GET() {
     const profile = await fetchProfileByEmail(session.email);
     const assignedSite = profile?.company_name ?? "";
     const [visits, notifications] = await Promise.all([
-      fetchVisits({ siteOrManager: { site: assignedSite, siteManagerId: profile?.id ?? "" } }),
+      fetchVisits({ site: assignedSite }),
       fetchNotifications()
     ]);
 

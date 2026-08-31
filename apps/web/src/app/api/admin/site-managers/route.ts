@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
       email?: string;
       isActive?: boolean;
       name?: string;
-      phone?: string;
+      password?: string;
       siteId?: string;
     };
 
-    if (!body.email?.trim() || !body.name?.trim()) {
-      return NextResponse.json({ message: "Name and email are required." }, { status: 400 });
+    if (!body.email?.trim() || !body.name?.trim() || !body.siteId?.trim() || !body.password || body.password.length < 8) {
+      return NextResponse.json({ message: "Name, email, assigned site, and a password of at least 8 characters are required." }, { status: 400 });
     }
 
     const supabase = getSupabaseAdminClient();
@@ -43,11 +43,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Supabase is not configured for the web app." }, { status: 500 });
     }
 
-    const { data: created, error: createError } = await supabase.auth.admin.inviteUserByEmail(body.email.trim(), {
-      redirectTo: process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/site-manager/login`
-        : undefined,
-      data: {
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+      email: body.email.trim(),
+      password: body.password,
+      email_confirm: true,
+      user_metadata: {
         full_name: body.name.trim(),
         role: "host"
       }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         email: body.email.trim(),
         full_name: body.name.trim(),
         is_active: body.isActive !== false,
-        phone_number: body.phone?.trim() || null,
+        phone_number: null,
         role: "host"
       })
       .eq("id", created.user.id);
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       id: created.user.id,
       name: body.name.trim(),
       email: body.email.trim(),
-      phone: body.phone?.trim() ?? "",
+      phone: "",
       siteId: siteName,
       siteName,
       isActive: body.isActive !== false

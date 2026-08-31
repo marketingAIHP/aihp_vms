@@ -6,9 +6,7 @@ export async function GET() {
   try {
     const session = await requireApiRole("site_manager");
     const profile = await fetchProfileByEmail(session.email);
-    const scopedVisits = await fetchVisits({
-      siteOrManager: { site: profile?.company_name ?? "", siteManagerId: profile?.id ?? "" }
-    });
+    const scopedVisits = await fetchVisits({ site: profile?.company_name ?? "" });
 
     return NextResponse.json({
       visits: scopedVisits,
