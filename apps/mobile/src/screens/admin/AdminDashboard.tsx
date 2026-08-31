@@ -159,14 +159,6 @@ export function AdminDashboard() {
             onPress={() => router.push("/admin-qr-management")}
           />
           <ActionCard
-            title="Devices"
-            subtitle="Register device serial numbers and assign each device to a site."
-            icon="devices"
-            accentBackgroundColor="#E6F7FA"
-            cardBackgroundColor="#F7FCFD"
-            onPress={() => router.push("/admin-devices")}
-          />
-          <ActionCard
             title="Settings"
             subtitle="Manage application preferences and administrative options."
             icon="settings"

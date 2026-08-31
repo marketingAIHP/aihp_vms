@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Cpu, Home, LogOut, NotebookTabs, Settings2, UserCircle2, Users2 } from "lucide-react";
+import { Building2, Home, LogOut, NotebookTabs, Settings2, UserCircle2, Users2 } from "lucide-react";
 import { logoutAction } from "@/lib/auth/actions";
 import type { AppRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,6 @@ const adminNav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: Home },
   { href: "/admin/visitors", label: "Visitors", icon: Users2 },
   { href: "/admin/sites", label: "Sites", icon: Building2 },
-  { href: "/admin/devices", label: "Devices", icon: Cpu },
   { href: "/admin/site-managers", label: "Users", icon: UserCircle2 },
   { href: "/admin/reports", label: "Reports", icon: NotebookTabs },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },

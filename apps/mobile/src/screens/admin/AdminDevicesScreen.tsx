@@ -8,11 +8,11 @@ import { apiClient, type SiteDevice } from "../../lib/api-client";
 import { colors, spacing } from "../../theme";
 import { AppButton, AppInput } from "../../ui/components";
 
-export function AdminDevicesScreen() {
-  return <ProtectedRoute allowedRole="admin"><AdminDevicesContent /></ProtectedRoute>;
+export function AdminDevicesScreen({ title = "Devices" }: { title?: string }) {
+  return <ProtectedRoute allowedRole="admin"><AdminDevicesContent title={title} /></ProtectedRoute>;
 }
 
-function AdminDevicesContent() {
+function AdminDevicesContent({ title }: { title: string }) {
   const { masterData } = useVmsData();
   const [devices, setDevices] = useState<SiteDevice[]>([]);
   const [serialNumber, setSerialNumber] = useState("");
@@ -55,7 +55,7 @@ function AdminDevicesContent() {
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}><Text style={styles.back}>‹ Back</Text></Pressable>
-        <Text style={styles.title}>Devices</Text>
+        <Text style={styles.title}>{title}</Text>
         <Pressable onPress={() => void loadDevices()}><Text style={styles.refresh}>Refresh</Text></Pressable>
       </View>
       <FlatList
