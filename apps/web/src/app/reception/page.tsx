@@ -7,6 +7,7 @@ import { ChevronLeft, LogIn, LogOut, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { PublicHero } from "@/components/visitor/public-hero";
 import { visitorSites } from "@/lib/visitor-sites";
 import type { SiteRecord } from "@/lib/types";
@@ -17,6 +18,7 @@ function buildSiteToken(value: string) {
 
 const QR_DISPLAY_DURATION_MS = 60_000;
 const RECEPTION_VIDEO_URL = "/videos/aihp-managed-workspaces.mp4";
+const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
 
 function getWebBaseUrl() {
   const configured = process.env.NEXT_PUBLIC_WEB_BASE_URL;
@@ -84,10 +86,33 @@ export default function ReceptionPage() {
   const [selectedSite, setSelectedSite] = useState<string>(visitorSites[0]);
   const [activeQr, setActiveQr] = useState<"checkin" | "checkout" | null>(null);
   const [baseUrl, setBaseUrl] = useState("");
+  const [deviceSite, setDeviceSite] = useState("");
+  const [activationCode, setActivationCode] = useState("");
+  const [activationError, setActivationError] = useState("");
 
   useEffect(() => {
     setBaseUrl(getWebBaseUrl());
+    const savedSite = window.localStorage.getItem(DEVICE_SITE_STORAGE_KEY);
+    if (savedSite) {
+      setDeviceSite(savedSite);
+      setSelectedSite(savedSite);
+    }
   }, []);
+
+  async function activateDevice() {
+    setActivationError("");
+    try {
+      const response = await fetch("/api/public/device-activation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ activationCode }) });
+      const payload = await response.json() as { message?: string; siteName?: string };
+      if (!response.ok || !payload.siteName) throw new Error(payload.message ?? "Unable to activate device.");
+      window.localStorage.setItem(DEVICE_SITE_STORAGE_KEY, payload.siteName);
+      setDeviceSite(payload.siteName);
+      setSelectedSite(payload.siteName);
+      setActivationCode("");
+    } catch (error) {
+      setActivationError(error instanceof Error ? error.message : "Unable to activate device.");
+    }
+  }
 
   useEffect(() => {
     if (!activeQr) return;
@@ -158,7 +183,13 @@ export default function ReceptionPage() {
         ) : (
           <Card className="rounded-[28px] border-border/70 shadow-lg">
             <CardContent className="grid gap-5 p-5 sm:p-6">
-              <div className="grid gap-2">
+              {!deviceSite ? <div className="grid gap-3">
+                <p className="text-sm font-semibold text-foreground">Activate this device</p>
+                <Input value={activationCode} onChange={(event) => setActivationCode(event.target.value.toUpperCase())} placeholder="Device activation code" maxLength={32} />
+                <Button type="button" disabled={!activationCode.trim()} onClick={() => void activateDevice()}>Activate Device</Button>
+                {activationError ? <p className="text-sm text-destructive">{activationError}</p> : null}
+              </div> : <div className="rounded-2xl bg-primary/10 p-4"><p className="text-xs font-semibold text-muted-foreground">THIS DEVICE IS ASSIGNED TO</p><p className="mt-1 text-lg font-bold text-foreground">{deviceSite}</p></div>}
+              {!deviceSite ? <div className="grid gap-2">
                 <p className="text-sm font-semibold text-foreground">Site Selector</p>
                 <Select value={selectedSite} onValueChange={setSelectedSite}>
                   <SelectTrigger className="h-13 w-full rounded-2xl px-4 text-sm sm:text-base">
@@ -172,7 +203,7 @@ export default function ReceptionPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> : null}
 
               <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-lg">
                 <div className="aspect-video w-full overflow-hidden bg-black lg:aspect-[16/8]">
@@ -211,9 +242,7 @@ export default function ReceptionPage() {
                 </Button>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Select a site, then open the required QR. Only one QR is shown at a time.
-              </p>
+              <p className="text-sm text-muted-foreground">{deviceSite ? "This device remains assigned until an admin activates it with a different device code." : "Activate this device to lock it to its assigned site."}</p>
             </CardContent>
           </Card>
         )}

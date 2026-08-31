@@ -77,6 +77,7 @@ export type SiteDevice = {
   id: string;
   serial_number: string;
   site_name: string;
+  activation_code: string | null;
   created_at: string;
 };
 

@@ -5,12 +5,13 @@ import { QrCode } from "lucide-react-native";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "qrcode";
+import * as SecureStore from "expo-secure-store";
 import { SvgXml } from "react-native-svg";
 import { AIHPLogo } from "../../components/branding/AIHPLogo";
 import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, radius, spacing } from "../../theme";
-import { AppButton } from "../../ui/components";
+import { AppButton, AppInput } from "../../ui/components";
 
 const fallbackSites = [
   "AIHP Tower",
@@ -48,6 +49,7 @@ const fallbackSites = [
 ] as const;
 
 const QR_DISPLAY_DURATION_MS = 60_000;
+const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
 // React Native resolves bundled binary assets through a static require.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const receptionVideoSource = require("../../../assets/aihp-managed-workspaces.mp4");
@@ -128,6 +130,10 @@ function ReceptionModeContent() {
   const { masterData } = useVmsData();
   const [activeQr, setActiveQr] = useState<"checkin" | "checkout" | null>(null);
   const [selectedSite, setSelectedSite] = useState("");
+  const [deviceSite, setDeviceSite] = useState<string | null>(null);
+  const [deviceReady, setDeviceReady] = useState(false);
+  const [activationCode, setActivationCode] = useState("");
+  const [activating, setActivating] = useState(false);
   const [siteRecords, setSiteRecords] = useState<ReceptionSite[]>([]);
   const [sitePickerVisible, setSitePickerVisible] = useState(false);
   const videoPlayer = useVideoPlayer(receptionVideoSource, (player) => {
@@ -143,6 +149,14 @@ function ReceptionModeContent() {
         : [...fallbackSites]),
     [masterData.buildings, siteRecords]
   );
+
+  useEffect(() => {
+    void SecureStore.getItemAsync(DEVICE_SITE_STORAGE_KEY).then((site) => {
+      setDeviceSite(site);
+      if (site) setSelectedSite(site);
+      setDeviceReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!baseUrl) return;
@@ -161,13 +175,36 @@ function ReceptionModeContent() {
   }, [baseUrl]);
 
   useEffect(() => {
-    if (!selectedSite) {
+    if (!selectedSite && deviceReady && !deviceSite) {
       const defaultSite = session?.siteName || availableSites[0] || "";
       if (defaultSite) {
         setSelectedSite(defaultSite);
       }
     }
-  }, [availableSites, selectedSite, session?.siteName]);
+  }, [availableSites, deviceReady, deviceSite, selectedSite, session?.siteName]);
+
+  async function activateDevice() {
+    if (!baseUrl || !activationCode.trim()) return;
+    setActivating(true);
+    try {
+      const response = await fetch(`${baseUrl}/api/public/device-activation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activationCode: activationCode.trim() })
+      });
+      const payload = await response.json() as { message?: string; siteName?: string };
+      if (!response.ok || !payload.siteName) throw new Error(payload.message ?? "Activation failed.");
+      await SecureStore.setItemAsync(DEVICE_SITE_STORAGE_KEY, payload.siteName);
+      setDeviceSite(payload.siteName);
+      setSelectedSite(payload.siteName);
+      setActivationCode("");
+    } catch (error) {
+      setActivationCode("");
+      alert(error instanceof Error ? error.message : "Unable to activate this device.");
+    } finally {
+      setActivating(false);
+    }
+  }
 
   useEffect(() => {
     if (!activeQr) return;
@@ -231,15 +268,9 @@ function ReceptionModeContent() {
               </View>
 
               <View style={styles.selectionCard}>
-                <Text style={styles.sectionLabel}>Site Selector</Text>
-                <Pressable style={styles.selectField} onPress={() => setSitePickerVisible(true)} disabled={!hasSites}>
-                  <Text style={selectedSite ? styles.selectValue : styles.selectPlaceholder}>
-                    {selectedSite || "Select Site"}
-                  </Text>
-                  <Text style={styles.selectChevron}>⌄</Text>
-                </Pressable>
+                {deviceSite ? <><Text style={styles.sectionLabel}>This device is assigned to</Text><Text style={styles.lockedSite}>{deviceSite}</Text></> : <><Text style={styles.sectionLabel}>Activate this device</Text><Text style={styles.activationHelp}>Enter the activation code created in Admin Settings to permanently assign this device to a site.</Text><AppInput value={activationCode} autoCapitalize="characters" onChangeText={setActivationCode} placeholder="Device activation code" /><AppButton title={activating ? "Activating..." : "Activate Device"} disabled={!activationCode.trim() || activating} onPress={() => void activateDevice()} /></>}
 
-                {selectedSite ? (
+                {deviceSite && selectedSite ? (
                   <>
                       <View style={styles.siteImageCard}>
                         <View style={styles.siteImageCanvas}>
@@ -369,6 +400,16 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 15,
     fontWeight: "800"
+  },
+  lockedSite: {
+    color: colors.primary,
+    fontSize: 19,
+    fontWeight: "800"
+  },
+  activationHelp: {
+    color: colors.secondaryText,
+    fontSize: 13,
+    lineHeight: 19
   },
   selectField: {
     minHeight: 54,

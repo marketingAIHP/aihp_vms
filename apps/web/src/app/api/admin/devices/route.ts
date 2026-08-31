@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
 import { createAuditLog, getSupabaseAdminClient } from "@/lib/server/live-data";
@@ -13,7 +14,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("site_devices")
-      .select("id, serial_number, site_name, created_at")
+      .select("id, serial_number, site_name, activation_code, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return NextResponse.json({ devices: data ?? [] });
@@ -35,21 +36,22 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseAdminClient();
     if (!supabase) throw new Error("Device service is unavailable.");
+    const activationCode = randomUUID().replaceAll("-", "").toUpperCase();
     const { data, error } = await supabase
       .from("site_devices")
-      .insert({ serial_number: serialNumber, site_name: siteName })
-      .select("id, serial_number, site_name, created_at")
+      .upsert(
+        { serial_number: serialNumber, site_name: siteName, activation_code: activationCode },
+        { onConflict: "serial_number" }
+      )
+      .select("id, serial_number, site_name, activation_code, created_at")
       .single();
-    if (error) {
-      const duplicate = error.code === "23505";
-      return NextResponse.json({ message: duplicate ? "This serial number is already registered." : error.message }, { status: duplicate ? 409 : 400 });
-    }
+    if (error) return NextResponse.json({ message: error.message }, { status: 400 });
 
     await createAuditLog({
       action: "REGISTER_DEVICE",
       actorName: session.email,
       actorRole: "admin",
-      detail: `Registered device ${serialNumber} for ${siteName}`,
+      detail: `Registered or reassigned device ${serialNumber} to ${siteName}`,
       targetId: data.id,
       targetTable: "site_devices"
     });

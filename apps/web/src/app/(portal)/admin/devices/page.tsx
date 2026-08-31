@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SiteRecord } from "@/lib/types";
 
-type Device = { id: string; serial_number: string; site_name: string; created_at: string };
+type Device = { id: string; serial_number: string; site_name: string; activation_code: string | null; created_at: string };
 
 export default function AdminDevicesPage() {
   const queryClient = useQueryClient();
@@ -56,10 +56,10 @@ export default function AdminDevicesPage() {
         <CardHeader><CardTitle>Registered Devices</CardTitle></CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Serial No.</TableHead><TableHead>Assigned Site</TableHead><TableHead>Registered</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Serial No.</TableHead><TableHead>Assigned Site</TableHead><TableHead>Activation Code</TableHead><TableHead>Registered</TableHead></TableRow></TableHeader>
             <TableBody>
-              {devicesData?.devices.map((device) => <TableRow key={device.id}><TableCell className="font-medium">{device.serial_number}</TableCell><TableCell>{device.site_name}</TableCell><TableCell className="text-muted-foreground">{new Date(device.created_at).toLocaleString()}</TableCell></TableRow>)}
-              {!isLoading && devicesData?.devices.length === 0 ? <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={3}>No devices registered yet.</TableCell></TableRow> : null}
+              {devicesData?.devices.map((device) => <TableRow key={device.id}><TableCell className="font-medium">{device.serial_number}</TableCell><TableCell>{device.site_name}</TableCell><TableCell className="font-mono text-xs">{device.activation_code ?? "Create a new device record"}</TableCell><TableCell className="text-muted-foreground">{new Date(device.created_at).toLocaleString()}</TableCell></TableRow>)}
+              {!isLoading && devicesData?.devices.length === 0 ? <TableRow><TableCell className="py-10 text-center text-muted-foreground" colSpan={4}>No devices registered yet.</TableCell></TableRow> : null}
             </TableBody>
           </Table>
         </CardContent>
