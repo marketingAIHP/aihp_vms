@@ -1,20 +1,30 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
-import { buildMonthlyTrends, buildReportSummary, fetchAuditLogs, fetchProfiles, fetchSites, fetchVisits, mapAudit } from "@/lib/server/live-data";
+import { buildMonthlyTrends, fetchAuditLogs, fetchProfiles, fetchSites, fetchVisitSummary, fetchVisits, mapAudit } from "@/lib/server/live-data";
 
 export async function GET() {
   try {
     await requireApiRole("admin");
 
-    const [visits, profiles, sites, auditLogs] = await Promise.all([
-      fetchVisits(),
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [recentVisits, profiles, sites, auditLogs, visitSummary] = await Promise.all([
+      fetchVisits({ from: sixMonthsAgo.toISOString() }),
       fetchProfiles(),
       fetchSites({ includeImages: false }),
-      fetchAuditLogs(50)
+      fetchAuditLogs(50),
+      fetchVisitSummary()
     ]);
 
     const activeSiteManagers = profiles.filter((profile) => profile.role === "host" && profile.is_active !== false);
-    const summary = buildReportSummary(visits, sites.length, activeSiteManagers.length);
+    const summary = {
+      ...visitSummary,
+      totalSites: sites.length,
+      totalSiteManagers: activeSiteManagers.length
+    };
     const seenActivity = new Set<string>();
     const visitorActivity = auditLogs.filter((item) => {
       if (item.target_table !== "visits") return false;
@@ -27,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json({
       summary,
-      trends: buildMonthlyTrends(visits),
+      trends: buildMonthlyTrends(recentVisits),
       distribution: [
         { name: "Checked In", value: summary.checkedIn },
         { name: "Checked Out", value: summary.checkedOut }

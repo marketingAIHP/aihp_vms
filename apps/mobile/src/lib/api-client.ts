@@ -216,13 +216,16 @@ function shouldRetryWithoutEmployeeId(error: { message?: string } | null) {
   return Boolean(error?.message?.toLowerCase().includes("employee_id"));
 }
 
+const INITIAL_VISIT_LIMIT = 250;
+
 async function loadVisits() {
   const { data, error } = await supabase
     .from("visits")
     .select(
       "id, visitor_name, company, purpose, category, mobile, email, host_user_id, host_name, building, floor, room, scheduled_at, status, checked_in_at, exited_at, notes"
     )
-    .order("scheduled_at", { ascending: false });
+    .order("scheduled_at", { ascending: false })
+    .limit(INITIAL_VISIT_LIMIT);
 
   if (error) {
     throw new Error(error.message);

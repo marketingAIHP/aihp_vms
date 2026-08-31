@@ -47,6 +47,22 @@ function formatReportValue(column: string, value: unknown, row: Record<string, u
   return String(value);
 }
 
+function getDateRange(period: string, month: string, quarter: string, year: string, fromDate: string, toDate: string) {
+  const istStart = (date: string) => new Date(`${date}T00:00:00+05:30`).toISOString();
+  if (period === "custom") {
+    const exclusiveEnd = new Date(`${toDate}T00:00:00+05:30`);
+    exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
+    return { from: istStart(fromDate), to: exclusiveEnd.toISOString() };
+  }
+  const startMonth = period === "monthly" ? Number(month) : period === "quarterly" ? (Number(quarter) - 1) * 3 : 0;
+  const endYear = period === "yearly" ? Number(year) + 1 : Number(year);
+  const endMonth = period === "monthly" ? startMonth + 1 : period === "quarterly" ? startMonth + 3 : 0;
+  return {
+    from: istStart(`${year}-${String(startMonth + 1).padStart(2, "0")}-01`),
+    to: istStart(`${endYear}-${String(endMonth + 1).padStart(2, "0")}-01`),
+  };
+}
+
 export default function AdminReportsPage() {
   const now = new Date();
   const [period, setPeriod] = useState("monthly");
@@ -58,10 +74,15 @@ export default function AdminReportsPage() {
   const [site, setSite] = useState("all");
   const [siteManager, setSiteManager] = useState("all");
   const [status, setStatus] = useState("all");
-  const { data } = useQuery({
-    queryKey: ["admin-reports"],
-    queryFn: () =>
-      fetchJson<{
+  const dateRange = useMemo(() => getDateRange(period, month, quarter, year, fromDate, toDate), [fromDate, month, period, quarter, toDate, year]);
+  const { data, error, isLoading } = useQuery({
+    queryKey: ["admin-reports", dateRange.from, dateRange.to, site, siteManager, status],
+    queryFn: () => {
+      const params = new URLSearchParams({ from: dateRange.from, to: dateRange.to });
+      if (site !== "all") params.set("site", site);
+      if (siteManager !== "all") params.set("siteManager", siteManager);
+      if (status !== "all") params.set("status", status);
+      return fetchJson<{
         summary: {
           visitorsToday: number;
           checkedIn: number;
@@ -75,7 +96,8 @@ export default function AdminReportsPage() {
           sites: Array<{ id: string; name: string }>;
           siteManagers: Array<{ id: string; name: string; siteName: string }>;
         };
-      }>("/api/admin/reports"),
+      }>(`/api/admin/reports?${params.toString()}`);
+    },
   });
 
   const sourceRows = useMemo(() => data?.reportRows ?? [], [data?.reportRows]);
@@ -98,7 +120,8 @@ export default function AdminReportsPage() {
     return date >= from && date <= to;
   }), [fromDate, month, period, quarter, site, siteManager, sourceRows, status, toDate, year]);
 
-  if (!data) return null;
+  if (isLoading) return <div className="py-16 text-center text-sm text-muted-foreground">Loading report data…</div>;
+  if (error || !data) return <div className="py-16 text-center text-sm text-destructive">Unable to load report data. Please refresh the page.</div>;
 
   const columns = ["visitorName", "mobileNumber", "siteManagerName", "siteName", "companyName", "purposeOfVisit", "vehicleNumber", "status", "checkInAt", "checkOutAt"];
   const reportRows = filteredSourceRows.map((row) =>

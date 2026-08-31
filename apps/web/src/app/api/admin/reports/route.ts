@@ -1,13 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
 import { buildReportSummary, fetchProfiles, fetchSites, fetchVisits } from "@/lib/server/live-data";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireApiRole("admin");
+    const { searchParams } = new URL(request.url);
+    const from = searchParams.get("from") ?? undefined;
+    const to = searchParams.get("to") ?? undefined;
+    const site = searchParams.get("site") ?? undefined;
+    const siteManagerId = searchParams.get("siteManager") ?? undefined;
+    const requestedStatus = searchParams.get("status");
+    const status = requestedStatus === "CHECKED_IN" || requestedStatus === "CHECKED_OUT" ? requestedStatus : undefined;
 
     const [visits, profiles, sites] = await Promise.all([
-      fetchVisits(),
+      fetchVisits({ from, site, siteManagerId, status, to }),
       fetchProfiles(),
       fetchSites({ includeImages: false })
     ]);

@@ -93,6 +93,10 @@ const DEFAULT_SETTINGS: SettingsRecord = {
   securityMode: "strict"
 };
 
+function quotePostgrestValue(value: string) {
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
 let supabaseAdminClient: SupabaseClient<any> | null | undefined;
 
 export function getSupabaseAdminClient() {
@@ -250,6 +254,41 @@ export function buildReportSummary(visits: VisitRecord[], totalSites: number, to
   };
 }
 
+export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitorsToday" | "checkedIn" | "checkedOut" | "totalVisitors">> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) throw new Error("Supabase is not configured for the web app.");
+
+  const todayParts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Kolkata",
+    year: "numeric"
+  }).formatToParts(new Date());
+  const today = ["year", "month", "day"].map((type) => todayParts.find((part) => part.type === type)?.value).join("-");
+  const todayStart = new Date(`${today}T00:00:00+05:30`);
+  const tomorrowStart = new Date(todayStart);
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const activeVisits = () => supabase.from("visits").select("id", { count: "exact", head: true }).not("status", "in", "(CANCELLED,DENIED)");
+
+  const [total, checkedIn, checkedOut, visitorsToday] = await Promise.all([
+    activeVisits(),
+    supabase.from("visits").select("id", { count: "exact", head: true }).eq("status", "CHECKED_IN").is("exited_at", null),
+    supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null),
+    activeVisits().gte("checked_in_at", todayStart.toISOString()).lt("checked_in_at", tomorrowStart.toISOString())
+  ]);
+
+  for (const result of [total, checkedIn, checkedOut, visitorsToday]) {
+    if (result.error) throw new Error(result.error.message);
+  }
+
+  return {
+    totalVisitors: total.count ?? 0,
+    checkedIn: checkedIn.count ?? 0,
+    checkedOut: checkedOut.count ?? 0,
+    visitorsToday: visitorsToday.count ?? 0
+  };
+}
+
 export async function fetchProfiles() {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
@@ -285,20 +324,65 @@ export async function fetchProfiles() {
 }
 
 export async function fetchProfileByEmail(email: string) {
-  const profiles = await fetchProfiles();
-  return profiles.find((profile) => profile.email?.trim().toLowerCase() === email.trim().toLowerCase()) ?? null;
-}
-
-export async function fetchVisits(options?: { includePhotos?: boolean }) {
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
     throw new Error("Supabase is not configured for the web app.");
   }
 
-  const { data, error } = await supabase
+  const primaryQuery = await supabase
+    .from("profiles")
+    .select("id, full_name, role, email, company_name, employee_id, phone_number, is_active")
+    .eq("email", email.trim())
+    .maybeSingle();
+
+  if (!primaryQuery.error) return primaryQuery.data as ProfileRow | null;
+  if (!primaryQuery.error.message?.toLowerCase().includes("employee_id")) {
+    throw new Error(primaryQuery.error.message);
+  }
+
+  const fallbackQuery = await supabase
+    .from("profiles")
+    .select("id, full_name, role, email, company_name, phone_number, is_active")
+    .eq("email", email.trim())
+    .maybeSingle();
+  if (fallbackQuery.error) throw new Error(fallbackQuery.error.message);
+  return fallbackQuery.data ? { employee_id: null, ...(fallbackQuery.data as Omit<ProfileRow, "employee_id">) } : null;
+}
+
+export async function fetchVisits(options?: {
+  includePhotos?: boolean;
+  from?: string;
+  limit?: number;
+  site?: string;
+  siteOrManager?: { site: string; siteManagerId: string };
+  siteManagerId?: string;
+  status?: VisitRecord["status"];
+  to?: string;
+}) {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured for the web app.");
+  }
+
+  let query = supabase
     .from("visits")
     .select("id, visitor_name, company, purpose, category, mobile, email, host_user_id, host_name, building, floor, room, scheduled_at, status, checked_in_at, exited_at, checkout_method, notes, created_at")
-    .order("scheduled_at", { ascending: false });
+    .order("checked_in_at", { ascending: false });
+
+  if (options?.from) query = query.gte("checked_in_at", options.from);
+  if (options?.to) query = query.lt("checked_in_at", options.to);
+  if (options?.site) query = query.eq("building", options.site);
+  if (options?.siteOrManager) {
+    query = query.or(
+      `building.eq.${quotePostgrestValue(options.siteOrManager.site)},host_user_id.eq.${options.siteOrManager.siteManagerId}`
+    );
+  }
+  if (options?.siteManagerId) query = query.eq("host_user_id", options.siteManagerId);
+  if (options?.status === "CHECKED_IN") query = query.eq("status", "CHECKED_IN").is("exited_at", null);
+  if (options?.status === "CHECKED_OUT") query = query.not("exited_at", "is", null);
+  if (options?.limit) query = query.limit(options.limit);
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(error.message);

@@ -5,14 +5,14 @@ import { fetchNotifications, fetchProfileByEmail, fetchVisits, mapNotification }
 export async function GET() {
   try {
     const session = await requireApiRole("site_manager");
-    const [profile, visits, notifications] = await Promise.all([
-      fetchProfileByEmail(session.email),
-      fetchVisits(),
+    const profile = await fetchProfileByEmail(session.email);
+    const assignedSite = profile?.company_name ?? "";
+    const [visits, notifications] = await Promise.all([
+      fetchVisits({ siteOrManager: { site: assignedSite, siteManagerId: profile?.id ?? "" } }),
       fetchNotifications()
     ]);
 
-    const assignedSite = profile?.company_name ?? "";
-    const scopedVisits = visits.filter((visit) => visit.siteName === assignedSite || visit.siteManagerId === profile?.id);
+    const scopedVisits = visits;
     const today = new Date().toDateString();
 
     return NextResponse.json({
