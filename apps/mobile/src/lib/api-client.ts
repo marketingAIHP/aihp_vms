@@ -73,6 +73,13 @@ type NotificationRow = {
   user_id: string | null;
 };
 
+export type SiteDevice = {
+  id: string;
+  serial_number: string;
+  site_name: string;
+  created_at: string;
+};
+
 function normalizeRole(role: RawRole | null | undefined): SessionRole {
   if (role === "admin") {
     return "admin";
@@ -320,6 +327,17 @@ export const apiClient = {
 
   async checkOutVisit(visitId: string) {
     await invokeWebApi(`/api/visits/${visitId}/check-out`, { method: "POST" });
+  },
+
+  async listSiteDevices() {
+    return invokeWebApi("/api/admin/devices", { method: "GET" }) as Promise<{ devices: SiteDevice[] }>;
+  },
+
+  async registerSiteDevice(serialNumber: string, siteName: string) {
+    return invokeWebApi("/api/admin/devices", {
+      body: JSON.stringify({ serialNumber, siteName }),
+      method: "POST"
+    }) as Promise<{ device: SiteDevice }>;
   },
 
   async getNotifications(userId: string, role: SessionRole) {

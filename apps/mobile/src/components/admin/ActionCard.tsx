@@ -1,9 +1,9 @@
 import type { LucideIcon } from "lucide-react-native";
-import { Building2, ChevronRight, FileBarChart2, QrCode, Settings, Users, UsersRound } from "lucide-react-native";
+import { Building2, ChevronRight, Cpu, FileBarChart2, QrCode, Settings, Users, UsersRound } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, spacing } from "../../theme";
 
-type ActionIconName = "users" | "reports" | "qr" | "visitors" | "settings" | "sites";
+type ActionIconName = "users" | "reports" | "qr" | "visitors" | "settings" | "sites" | "devices";
 
 const iconMap: Record<ActionIconName, LucideIcon> = {
   users: UsersRound,
@@ -11,7 +11,8 @@ const iconMap: Record<ActionIconName, LucideIcon> = {
   qr: QrCode,
   visitors: Users,
   settings: Settings,
-  sites: Building2
+  sites: Building2,
+  devices: Cpu
 };
 
 export function ActionCard({
