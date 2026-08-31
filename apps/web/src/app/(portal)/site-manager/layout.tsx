@@ -8,14 +8,19 @@ export default async function SiteManagerLayout({ children }: { children: React.
   let siteName = "Not Assigned";
 
   if (supabase) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("company_name")
-      .eq("email", session.email)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("company_name")
+        .eq("email", session.email)
+        .maybeSingle();
 
-    if (typeof data?.company_name === "string" && data.company_name.trim()) {
-      siteName = data.company_name.trim();
+      if (typeof data?.company_name === "string" && data.company_name.trim()) {
+        siteName = data.company_name.trim();
+      }
+    } catch {
+      // The dashboard APIs still enforce the assigned-site scope; a temporary
+      // profile lookup error must not block a successful login.
     }
   }
 

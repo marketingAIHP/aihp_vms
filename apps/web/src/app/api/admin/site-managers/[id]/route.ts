@@ -18,6 +18,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       email?: string;
       isActive?: boolean;
       name?: string;
+      password?: string;
       phone?: string;
       siteId?: string;
     };
@@ -26,6 +27,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (!supabase) {
       return NextResponse.json({ message: "Supabase is not configured for the web app." }, { status: 500 });
+    }
+
+    if (body.password !== undefined) {
+      if (body.password.length < 8) {
+        return NextResponse.json({ message: "Password must be at least 8 characters." }, { status: 400 });
+      }
+      const { error: passwordError } = await supabase.auth.admin.updateUserById(id, { password: body.password });
+      if (passwordError) return NextResponse.json({ message: passwordError.message }, { status: 400 });
     }
 
     const profilePatch: Record<string, string | boolean | null> = {};
@@ -39,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       profilePatch.company_name = siteName || null;
     }
 
-    if (Object.keys(profilePatch).length === 0) {
+    if (Object.keys(profilePatch).length === 0 && body.password === undefined) {
       return NextResponse.json({ message: "No changes were provided." }, { status: 400 });
     }
 

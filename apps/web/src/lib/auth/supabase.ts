@@ -16,11 +16,18 @@ export async function getSupabaseServerClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
+        // Server Components are read-only for cookies. Server Actions and route
+        // handlers can persist refreshed tokens; layouts must not crash if a
+        // refresh is attempted while rendering.
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // The next authenticated request will refresh the session in a
+          // writable context.
+        }
       },
     },
   });
 }
-

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { fetchJson } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +21,10 @@ export default function AdminSiteManagersPage() {
     siteId: "",
     isActive: true,
   });
+  const [editingManager, setEditingManager] = useState<Record<string, string | boolean> | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSiteId, setEditSiteId] = useState("");
+  const [editPassword, setEditPassword] = useState("");
 
   const { data } = useQuery({
     queryKey: ["admin-site-managers"],
@@ -54,6 +59,29 @@ export default function AdminSiteManagersPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-site-managers"] });
     },
   });
+  const editSiteManager = useMutation({
+    mutationFn: () => {
+      if (!editingManager) throw new Error("No site manager selected.");
+      return fetchJson(`/api/admin/site-managers/${String(editingManager.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: editName, siteId: editSiteId, ...(editPassword ? { password: editPassword } : {}) }),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Site Manager updated.");
+      setEditingManager(null); setEditPassword("");
+      queryClient.invalidateQueries({ queryKey: ["admin-site-managers"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to update site manager."),
+  });
+
+  function openEditor(manager: Record<string, string | boolean>) {
+    setEditingManager(manager);
+    setEditName(String(manager.name));
+    const site = sitesData?.sites.find((item) => item.name === String(manager.siteName));
+    setEditSiteId(site?.id ?? String(manager.siteName));
+    setEditPassword("");
+  }
 
   const deleteSiteManager = useMutation({
     mutationFn: (id: string) =>
@@ -92,6 +120,7 @@ export default function AdminSiteManagersPage() {
                   <TableCell>{String(manager.siteName)}</TableCell>
                   <TableCell>{manager.isActive ? "Active" : "Inactive"}</TableCell>
                   <TableCell className="space-x-2 text-right">
+                    <Button size="sm" variant="outline" onClick={() => openEditor(manager)}>Edit</Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -127,6 +156,24 @@ export default function AdminSiteManagersPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={Boolean(editingManager)} onOpenChange={(open) => !open && setEditingManager(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Site Manager</DialogTitle></DialogHeader>
+          <div className="grid gap-4">
+            <Input placeholder="Name" value={editName} onChange={(event) => setEditName(event.target.value)} />
+            <Select value={editSiteId} onValueChange={setEditSiteId}>
+              <SelectTrigger><SelectValue placeholder="Select assigned site" /></SelectTrigger>
+              <SelectContent>{sitesData?.sites.filter((site) => site.isActive).map((site) => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Input type="password" placeholder="New password (leave blank to keep current)" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingManager(null)}>Cancel</Button>
+            <Button disabled={!editName.trim() || !editSiteId || (editPassword.length > 0 && editPassword.length < 8) || editSiteManager.isPending} onClick={() => editSiteManager.mutate()}>{editSiteManager.isPending ? "Saving..." : "Save Changes"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
