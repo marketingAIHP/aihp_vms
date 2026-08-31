@@ -34,6 +34,7 @@ type VisitRow = {
   building: string;
   category: string | null;
   checked_in_at: string | null;
+  checkout_method?: "MANUAL" | "AUTO" | null;
   company: string;
   created_at?: string | null;
   email: string | null;
@@ -169,7 +170,8 @@ export async function mapVisitRecord(row: VisitRow, includePhoto = false): Promi
     photoUrl,
     status,
     checkInAt: row.checked_in_at ?? row.scheduled_at,
-    checkOutAt: row.exited_at ?? undefined
+    checkOutAt: row.exited_at ?? undefined,
+    checkoutMethod: row.checkout_method ?? undefined
   };
 }
 
@@ -295,7 +297,7 @@ export async function fetchVisits(options?: { includePhotos?: boolean }) {
 
   const { data, error } = await supabase
     .from("visits")
-    .select("id, visitor_name, company, purpose, category, mobile, email, host_user_id, host_name, building, floor, room, scheduled_at, status, checked_in_at, exited_at, notes, created_at")
+    .select("id, visitor_name, company, purpose, category, mobile, email, host_user_id, host_name, building, floor, room, scheduled_at, status, checked_in_at, exited_at, checkout_method, notes, created_at")
     .order("scheduled_at", { ascending: false });
 
   if (error) {

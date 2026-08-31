@@ -116,7 +116,7 @@ export default function AdminVisitorsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Visitor</TableHead>
-                <TableHead>Site Manager</TableHead>
+                <TableHead>Person to Meet</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>History</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -129,12 +129,14 @@ export default function AdminVisitorsPage() {
                     <div className="font-medium">{visitor.visitorName}</div>
                     <div className="text-xs text-muted-foreground">{visitor.companyName}</div>
                   </TableCell>
-                  <TableCell>{visitor.siteManagerName}</TableCell>
+                  <TableCell>{visitor.personToMeet}</TableCell>
                   <TableCell><Badge variant="outline">{visitor.status}</Badge></TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {visitor.checkInAt ? `In: ${formatDateTime(visitor.checkInAt)}` : "Not checked in"}
                     <br />
-                    {visitor.checkOutAt ? `Out: ${formatDateTime(visitor.checkOutAt)}` : "No check-out yet"}
+                    {visitor.checkOutAt
+                      ? `${visitor.checkoutMethod === "AUTO" ? "Auto check-out" : "Out"}: ${formatDateTime(visitor.checkOutAt)}`
+                      : "No check-out yet"}
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => setSelectedId(visitor.id)}>

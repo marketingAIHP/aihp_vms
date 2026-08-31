@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const now = new Date().toISOString();
   const { data: updatedRows, error } = await supabase
     .from("visits")
-    .update({ exited_at: now, status: "EXITED" })
+    .update({ exited_at: now, status: "EXITED", checkout_method: "MANUAL" })
     .eq("id", id)
     .eq("status", "CHECKED_IN")
     .is("exited_at", null)

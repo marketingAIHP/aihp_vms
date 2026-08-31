@@ -157,7 +157,8 @@ export async function POST(request: Request) {
       .from("visits")
       .update({
         exited_at: now,
-        status: "EXITED"
+        status: "EXITED",
+        checkout_method: "MANUAL"
       })
       .eq("id", activeVisit.id)
       .eq("status", "CHECKED_IN")

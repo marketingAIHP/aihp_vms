@@ -20,7 +20,9 @@
     },
     "owner": "aihp",
     "updates": {
-      "url": "https://u.expo.dev/7e4cba54-d077-4228-84c9-9d1e10ce76fa"
+      "url": "https://u.expo.dev/7e4cba54-d077-4228-84c9-9d1e10ce76fa",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "plugins": [
       "expo-video"

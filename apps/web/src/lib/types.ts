@@ -1,6 +1,7 @@
 export type AppRole = "admin" | "site_manager";
 
 export type VisitorStatus = "CHECKED_IN" | "CHECKED_OUT";
+export type CheckoutMethod = "MANUAL" | "AUTO";
 
 export interface AppSession {
   email: string;
@@ -44,6 +45,7 @@ export interface VisitRecord {
   status: VisitorStatus;
   checkInAt: string;
   checkOutAt?: string;
+  checkoutMethod?: CheckoutMethod;
 }
 
 export interface NotificationRecord {

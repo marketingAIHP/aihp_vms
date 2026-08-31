@@ -88,7 +88,7 @@ function ReceptionQrCard({
     void QRCode.toString(url, {
       margin: 1,
       type: "svg",
-      width: 220
+      width: 500
     }).then((markup: string) => {
       if (active) {
         setSvgMarkup(markup);
@@ -241,26 +241,23 @@ function ReceptionModeContent() {
 
                 {selectedSite ? (
                   <>
-                    <View style={styles.siteImageCard}>
-                      <View style={styles.siteImageCanvas}>
-                        <VideoView
-                          player={videoPlayer}
-                          style={styles.siteVideo}
-                          contentFit="cover"
-                          nativeControls={false}
-                          surfaceType="textureView"
-                        />
+                      <View style={styles.siteImageCard}>
+                        <View style={styles.siteImageCanvas}>
+                          <VideoView
+                            player={videoPlayer}
+                            style={styles.siteVideo}
+                            contentFit="cover"
+                            nativeControls={false}
+                            surfaceType="surfaceView"
+                          />
+                        </View>
                       </View>
-                    </View>
                     <View style={styles.actionRow}>
                       <AppButton title="Visitor Check-In" style={styles.actionButton} onPress={() => setActiveQr("checkin")} />
                       <AppButton title="Visitor Check-Out" style={styles.actionButton} variant="secondary" onPress={() => setActiveQr("checkout")} />
                     </View>
-                    <Text style={styles.helperText}>Select a site, then open the required QR. Only one QR is shown at a time.</Text>
                   </>
-                ) : (
-                  <Text style={styles.helperText}>Select a site to continue.</Text>
-                )}
+                ) : null}
               </View>
             </>
           )
@@ -361,7 +358,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    gap: spacing.md,
+    gap: spacing.lg,
     shadowColor: colors.navyInk,
     shadowOpacity: 0.06,
     shadowRadius: 14,
@@ -409,7 +406,8 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   siteImageCanvas: {
-    aspectRatio: 16 / 9,
+    aspectRatio: 4 / 3,
+    minHeight: 360,
     backgroundColor: colors.navyInk,
     overflow: "hidden"
   },
@@ -426,10 +424,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 60,
     paddingHorizontal: spacing.sm
-  },
-  helperText: {
-    color: colors.secondaryText,
-    fontSize: 13
   },
   qrCard: {
     backgroundColor: colors.cardBackground,
@@ -472,8 +466,9 @@ const styles = StyleSheet.create({
     lineHeight: 18
   },
   qrCanvas: {
-    width: 240,
-    height: 240,
+    width: "100%",
+    maxWidth: 400,
+    aspectRatio: 1,
     alignSelf: "center",
     borderRadius: radius.lg,
     backgroundColor: colors.pureWhite,

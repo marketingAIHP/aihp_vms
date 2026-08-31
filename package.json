@@ -23,6 +23,7 @@
     "dev:web": "npm --workspace apps/web run dev",
     "build:android:apk": "npm --workspace apps/mobile run build:apk",
     "build:android:store": "npm --workspace apps/mobile run build:store",
+    "update:production": "npm --workspace apps/mobile run update:production",
     "lint:mobile": "npm --workspace apps/mobile run lint",
     "lint:api": "npm --workspace apps/api run lint",
     "lint:web": "npm --workspace apps/web run lint",
