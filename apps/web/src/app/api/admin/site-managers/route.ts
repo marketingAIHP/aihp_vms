@@ -60,15 +60,15 @@ export async function POST(request: NextRequest) {
     const siteName = await resolveSiteName(body.siteId ?? "");
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: created.user.id,
         company_name: siteName || null,
         email: body.email.trim(),
         full_name: body.name.trim(),
         is_active: body.isActive !== false,
         phone_number: null,
         role: "host"
-      })
-      .eq("id", created.user.id);
+      });
 
     if (profileError) {
       await supabase.auth.admin.deleteUser(created.user.id);
@@ -93,7 +93,11 @@ export async function POST(request: NextRequest) {
       siteName,
       isActive: body.isActive !== false
     });
-  } catch {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    const unauthorized = error instanceof Error && error.message === "Unauthorized";
+    return NextResponse.json(
+      { message: unauthorized ? "Unauthorized" : error instanceof Error ? error.message : "Unable to create site manager." },
+      { status: unauthorized ? 401 : 500 }
+    );
   }
 }

@@ -46,6 +46,9 @@ export default function AdminSiteManagersPage() {
       setForm({ name: "", email: "", password: "", siteId: "", isActive: true });
       queryClient.invalidateQueries({ queryKey: ["admin-site-managers"] });
     },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Unable to create site manager.");
+    },
   });
 
   const toggleSiteManager = useMutation({
