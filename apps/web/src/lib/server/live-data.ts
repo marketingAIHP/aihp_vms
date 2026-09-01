@@ -2,6 +2,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { AppRole, ReportSummary, SettingsRecord, SiteManagerRecord, SiteRecord, VisitRecord } from "@/lib/types";
 import {
   extractLegacyPhotoUrl,
+  extractCompanyToVisit,
+  extractModeOfCommute,
+  extractVehicleNumber,
   extractPhotoStoragePath,
   getVisibleVisitNotes
 } from "@/lib/server/visit-note-metadata";
@@ -36,6 +39,7 @@ type VisitRow = {
   checked_in_at: string | null;
   checkout_method?: "MANUAL" | "AUTO" | null;
   company: string;
+  company_to_visit?: string | null;
   created_at?: string | null;
   email: string | null;
   exited_at: string | null;
@@ -44,12 +48,14 @@ type VisitRow = {
   host_user_id: string;
   id: string;
   mobile: string | null;
+  mode_of_commute?: string | null;
   notes: string | null;
   purpose: string;
   room: string;
   scheduled_at: string;
   status: RawVisitStatus;
   visitor_name: string;
+  vehicle_number?: string | null;
 };
 
 type NotificationRow = {
@@ -164,13 +170,19 @@ export async function mapVisitRecord(row: VisitRow, includePhoto = false): Promi
     mobileNumber: row.mobile ?? "",
     email: row.email ?? "",
     companyName: row.company,
+    companyToVisit: row.company_to_visit || extractCompanyToVisit(row.notes) || row.building || "",
     purposeOfVisit: row.purpose,
+    category: row.category ?? undefined,
     personToMeet: row.host_name,
     remarks: getVisibleVisitNotes(row.notes),
     siteId: row.building,
     siteName: row.building,
     siteManagerId: row.host_user_id,
     siteManagerName: row.host_name,
+    floor: row.floor ?? undefined,
+    room: row.room ?? undefined,
+    modeOfCommute: row.mode_of_commute || extractModeOfCommute(row.notes) || undefined,
+    vehicleNumber: row.vehicle_number || extractVehicleNumber(row.notes) || undefined,
     photoUrl,
     status,
     checkInAt: row.checked_in_at ?? row.scheduled_at,

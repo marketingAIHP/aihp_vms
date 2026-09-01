@@ -46,6 +46,7 @@ function AdminVisitRecordsContent({
   const [site, setSite] = useState("");
   const [openFilter, setOpenFilter] = useState<"status" | "site" | null>(null);
   const [selectedVisit, setSelectedVisit] = useState<VisitRecord | null>(null);
+  const [detailVisit, setDetailVisit] = useState<VisitRecord | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [actionPending, setActionPending] = useState(false);
   const sourceRecords = useMemo(() => filter(visits), [filter, visits]);
@@ -59,7 +60,7 @@ function AdminVisitRecordsContent({
       if (status && record.status !== status) return false;
       if (site && record.building !== site) return false;
       if (!normalized) return true;
-      return [record.visitorName, record.mobile, record.company, record.siteManagerName, record.purpose, record.building]
+      return [record.visitorName, record.mobile, record.company, record.companyToVisit, record.siteManagerName, record.purpose, record.building]
         .join(" ")
         .toLowerCase()
         .includes(normalized);
@@ -147,18 +148,20 @@ function AdminVisitRecordsContent({
         }
         ListEmptyComponent={<Text style={styles.emptyText}>{emptyText}</Text>}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <View style={[styles.card, item.status === "CHECKED_IN" ? styles.checkedInCard : styles.checkedOutCard]}>
             <View style={styles.rowBetween}>
               <Text style={styles.name}>{item.visitorName}</Text>
               <Badge label={item.status} tone={tone(item.status)} />
             </View>
             <Text style={styles.meta}>{item.siteManagerName} • {item.company}</Text>
+            <Text style={styles.meta}>Company to visit: {item.companyToVisit || item.building}</Text>
             <Text style={styles.meta}>{item.purpose} • {item.building} / {item.room}</Text>
             <Text style={styles.meta}>
               {new Date(item.createdAt).toLocaleDateString()} •{" "}
               {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </Text>
             <View style={styles.actionRow}>
+              <AppButton title="View Details" variant="ghost" style={styles.actionButton} onPress={() => setDetailVisit(item)} />
               <AppButton title="Edit" variant="ghost" style={styles.actionButton} onPress={() => openEditor(item)} />
               {item.status === "CHECKED_IN" ? (
                 <AppButton title="Check Out" style={styles.actionButton} disabled={actionPending} onPress={() => confirmCheckOut(item)} />
@@ -190,6 +193,29 @@ function AdminVisitRecordsContent({
             />
           </Pressable>
         </Pressable>
+      </Modal>
+
+      <Modal animationType="fade" transparent visible={Boolean(detailVisit)} onRequestClose={() => setDetailVisit(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <FlatList
+              data={detailVisit ? [
+                ["Visitor name", detailVisit.visitorName], ["Status", detailVisit.status.replaceAll("_", " ")],
+                ["Mobile number", detailVisit.mobile], ["Email", detailVisit.email],
+                ["Company coming from", detailVisit.company], ["Company to visit", detailVisit.companyToVisit || detailVisit.building],
+                ["Person to meet", detailVisit.siteManagerName], ["Purpose of visit", detailVisit.purpose],
+                ["Category", detailVisit.category], ["Site", detailVisit.building], ["Floor / room", `${detailVisit.floor || "-"} / ${detailVisit.room || "-"}`],
+                ["Mode of commute", detailVisit.modeOfCommute || "-"], ["Vehicle number", detailVisit.vehicleNumber || "-"],
+                ["Check-in", detailVisit.checkedInAt ? new Date(detailVisit.checkedInAt).toLocaleString() : "Not checked in"],
+                ["Check-out", detailVisit.checkedOutAt ? new Date(detailVisit.checkedOutAt).toLocaleString() : "Not checked out"], ["Remarks", detailVisit.notes || "-"]
+              ] : []}
+              keyExtractor={([label]) => label}
+              ListHeaderComponent={<Text style={styles.modalTitle}>Visitor Details</Text>}
+              renderItem={({ item: [label, value] }) => <View style={styles.detailRow}><Text style={styles.detailLabel}>{label}</Text><Text style={styles.detailValue}>{value || "-"}</Text></View>}
+            />
+            <AppButton title="Close" variant="ghost" onPress={() => setDetailVisit(null)} />
+          </View>
+        </View>
       </Modal>
 
       <Modal animationType="fade" transparent visible={Boolean(selectedVisit)} onRequestClose={() => setSelectedVisit(null)}>
@@ -343,6 +369,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs
   },
+  checkedInCard: { backgroundColor: "#ecfdf5", borderColor: "#86efac" },
+  checkedOutCard: { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -369,5 +397,20 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     minHeight: 120
+  },
+  detailRow: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
+  },
+  detailLabel: {
+    color: colors.secondaryText,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  detailValue: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    marginTop: 2
   }
 });

@@ -8,11 +8,14 @@ import { formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import type { SiteRecord } from "@/lib/types";
+import type { SiteRecord, VisitRecord } from "@/lib/types";
+
+type Visitor = VisitRecord;
 
 export default function AdminVisitorsPage() {
   const queryClient = useQueryClient();
@@ -22,12 +25,13 @@ export default function AdminVisitorsPage() {
   const [date, setDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailVisitor, setDetailVisitor] = useState<Visitor | null>(null);
 
   const { data } = useQuery({
     queryKey: ["admin-visitors", search, status, site, date],
     queryFn: () =>
       fetchJson<{
-        visitors: Array<Record<string, string>>;
+        visitors: Visitor[];
         auditLogs: Array<{ id: string; detail: string; createdAt: string }>;
       }>(`/api/admin/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`),
   });
@@ -116,6 +120,7 @@ export default function AdminVisitorsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Visitor</TableHead>
+                <TableHead>Company to Visit</TableHead>
                 <TableHead>Person to Meet</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>History</TableHead>
@@ -124,13 +129,14 @@ export default function AdminVisitorsPage() {
             </TableHeader>
             <TableBody>
               {data?.visitors.map((visitor) => (
-                <TableRow key={visitor.id}>
+                <TableRow key={visitor.id} className={visitor.status === "CHECKED_IN" ? "bg-emerald-50/70 hover:bg-emerald-100/70" : "bg-slate-50/80 hover:bg-slate-100/80"}>
                   <TableCell>
                     <div className="font-medium">{visitor.visitorName}</div>
                     <div className="text-xs text-muted-foreground">{visitor.companyName}</div>
                   </TableCell>
+                  <TableCell>{visitor.companyToVisit || visitor.siteName || "-"}</TableCell>
                   <TableCell>{visitor.personToMeet}</TableCell>
-                  <TableCell><Badge variant="outline">{visitor.status}</Badge></TableCell>
+                  <TableCell><Badge className={visitor.status === "CHECKED_IN" ? "border-emerald-300 bg-emerald-100 text-emerald-800" : "border-slate-300 bg-slate-100 text-slate-700"} variant="outline">{visitor.status}</Badge></TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {visitor.checkInAt ? `In: ${formatDateTime(visitor.checkInAt)}` : "Not checked in"}
                     <br />
@@ -139,6 +145,9 @@ export default function AdminVisitorsPage() {
                       : "No check-out yet"}
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
+                    <Button size="sm" variant="outline" onClick={() => setDetailVisitor(visitor)}>
+                      View Details
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => setSelectedId(visitor.id)}>
                       Edit
                     </Button>
@@ -199,6 +208,43 @@ export default function AdminVisitorsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(detailVisitor)} onOpenChange={(open) => !open && setDetailVisitor(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Visitor Details</DialogTitle>
+          </DialogHeader>
+          {detailVisitor ? (
+            <div className="grid gap-4 text-sm sm:grid-cols-2">
+              <Detail label="Visitor name" value={detailVisitor.visitorName} />
+              <Detail label="Status" value={detailVisitor.status?.replaceAll("_", " ")} />
+              <Detail label="Mobile number" value={detailVisitor.mobileNumber} />
+              <Detail label="Email" value={detailVisitor.email} />
+              <Detail label="Company coming from" value={detailVisitor.companyName} />
+              <Detail label="Company to visit" value={detailVisitor.companyToVisit || detailVisitor.siteName} />
+              <Detail label="Person to meet" value={detailVisitor.personToMeet} />
+              <Detail label="Purpose of visit" value={detailVisitor.purposeOfVisit} />
+              <Detail label="Site" value={detailVisitor.siteName} />
+              <Detail label="Floor / room" value={[detailVisitor.floor, detailVisitor.room].filter(Boolean).join(" / ")} />
+              <Detail label="Category" value={detailVisitor.category} />
+              <Detail label="Mode of commute" value={detailVisitor.modeOfCommute} />
+              <Detail label="Vehicle number" value={detailVisitor.vehicleNumber} />
+              <Detail label="Check-in" value={detailVisitor.checkInAt ? formatDateTime(detailVisitor.checkInAt) : "Not checked in"} />
+              <Detail label="Check-out" value={detailVisitor.checkOutAt ? `${detailVisitor.checkoutMethod === "AUTO" ? "Auto check-out: " : ""}${formatDateTime(detailVisitor.checkOutAt)}` : "Not checked out"} />
+              <Detail label="Remarks" value={detailVisitor.remarks} fullWidth />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function Detail({ label, value, fullWidth = false }: { label: string; value?: string; fullWidth?: boolean }) {
+  return (
+    <div className={fullWidth ? "sm:col-span-2" : ""}>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-foreground">{value?.trim() || "-"}</p>
     </div>
   );
 }

@@ -8,6 +8,7 @@ export interface VisitRecord {
   id: string;
   visitorName: string;
   company: string;
+  companyToVisit: string;
   purpose: string;
   category: string;
   mobile: string;
@@ -17,6 +18,8 @@ export interface VisitRecord {
   building: string;
   floor: string;
   room: string;
+  modeOfCommute?: string;
+  vehicleNumber?: string;
   createdAt: string;
   status: VisitStatus;
   checkedInAt: string | null;

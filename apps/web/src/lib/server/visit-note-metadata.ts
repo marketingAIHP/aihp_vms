@@ -1,4 +1,6 @@
 const COMPANY_TO_VISIT_PREFIX = "Company To Visit:";
+const MODE_OF_COMMUTE_PREFIX = "Mode of Commute:";
+const VEHICLE_NUMBER_PREFIX = "Vehicle Number:";
 const LEGACY_PHOTO_URL_PREFIX = "Photo:";
 const PHOTO_PATH_PREFIX = "PhotoPath:";
 
@@ -19,6 +21,23 @@ export function extractPhotoStoragePath(notes: string | null | undefined) {
 export function extractLegacyPhotoUrl(notes: string | null | undefined) {
   const line = splitLines(notes).find((item) => item.startsWith(LEGACY_PHOTO_URL_PREFIX));
   return line ? line.slice(LEGACY_PHOTO_URL_PREFIX.length).trim() : "";
+}
+
+function extractValue(notes: string | null | undefined, prefix: string) {
+  const line = splitLines(notes).find((item) => item.startsWith(prefix));
+  return line ? line.slice(prefix.length).trim() : "";
+}
+
+export function extractCompanyToVisit(notes: string | null | undefined) {
+  return extractValue(notes, COMPANY_TO_VISIT_PREFIX);
+}
+
+export function extractModeOfCommute(notes: string | null | undefined) {
+  return extractValue(notes, MODE_OF_COMMUTE_PREFIX);
+}
+
+export function extractVehicleNumber(notes: string | null | undefined) {
+  return extractValue(notes, VEHICLE_NUMBER_PREFIX);
 }
 
 export function extractProtectedNoteLines(notes: string | null | undefined) {

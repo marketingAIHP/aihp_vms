@@ -31,6 +31,7 @@ type VisitRow = {
   category: string | null;
   checked_in_at: string | null;
   company: string;
+  company_to_visit?: string | null;
   email: string | null;
   exited_at: string | null;
   floor: string;
@@ -38,12 +39,14 @@ type VisitRow = {
   host_user_id: string;
   id: string;
   mobile: string | null;
+  mode_of_commute?: string | null;
   notes: string | null;
   purpose: string;
   room: string;
   scheduled_at: string;
   status: RawVisitStatus;
   visitor_name: string;
+  vehicle_number?: string | null;
 };
 
 type MasterDataRow = {
@@ -112,6 +115,11 @@ function normalizeVisitStatus(row: Pick<VisitRow, "checked_in_at" | "exited_at" 
   return "CHECKED_IN";
 }
 
+function visitNoteValue(notes: string | null | undefined, label: string) {
+  const line = (notes ?? "").split(/\r?\n/).map((item) => item.trim()).find((item) => item.startsWith(label));
+  return line ? line.slice(label.length).trim() : "";
+}
+
 function toVisitRecord(row: VisitRow): VisitRecord | null {
   const status = normalizeVisitStatus(row);
 
@@ -123,6 +131,7 @@ function toVisitRecord(row: VisitRow): VisitRecord | null {
     id: row.id,
     visitorName: row.visitor_name,
     company: row.company,
+    companyToVisit: row.company_to_visit || visitNoteValue(row.notes, "Company To Visit:") || row.building,
     purpose: row.purpose,
     category: row.category ?? "Walk-In",
     mobile: row.mobile ?? "",
@@ -132,6 +141,8 @@ function toVisitRecord(row: VisitRow): VisitRecord | null {
     building: row.building,
     floor: row.floor,
     room: row.room,
+    modeOfCommute: row.mode_of_commute || visitNoteValue(row.notes, "Mode of Commute:") || undefined,
+    vehicleNumber: row.vehicle_number || visitNoteValue(row.notes, "Vehicle Number:") || undefined,
     createdAt: row.checked_in_at ?? row.scheduled_at,
     status,
     checkedInAt: row.checked_in_at ?? row.scheduled_at,

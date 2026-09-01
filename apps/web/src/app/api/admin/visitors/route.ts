@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
           visit.mobileNumber,
           visit.email,
           visit.companyName,
+          visit.companyToVisit,
           visit.personToMeet,
           visit.siteName,
           visit.siteManagerName
