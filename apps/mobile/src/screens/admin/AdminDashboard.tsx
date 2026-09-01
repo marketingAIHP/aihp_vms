@@ -121,7 +121,7 @@ export function AdminDashboard() {
             label="Today's Visitors"
             value={todayVisitors}
             trend="Checked in today across all sites"
-            onPress={() => router.push("/admin-visits")}
+            onPress={() => router.push({ pathname: "/admin-visits", params: { filter: "today" } })}
           />
         </View>
 

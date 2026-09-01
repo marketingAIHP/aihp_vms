@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,7 +40,8 @@ function AdminVisitRecordsContent({
   filter: (records: VisitRecord[]) => VisitRecord[];
   title: string;
 }) {
-  const { error, loading, refresh, visits } = useVmsData();
+  const { error, loading, masterData, refresh, visits } = useVmsData();
+  const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<VisitRecord["status"] | "">("");
   const [site, setSite] = useState("");
@@ -50,13 +51,11 @@ function AdminVisitRecordsContent({
   const [editNotes, setEditNotes] = useState("");
   const [actionPending, setActionPending] = useState(false);
   const sourceRecords = useMemo(() => filter(visits), [filter, visits]);
-  const sites = useMemo(
-    () => Array.from(new Set(sourceRecords.map((record) => record.building).filter(Boolean))).sort(),
-    [sourceRecords]
-  );
+  const sites = useMemo(() => masterData.buildings, [masterData.buildings]);
   const records = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return sourceRecords.filter((record) => {
+      if (initialFilter === "today" && new Date(record.createdAt).toDateString() !== new Date().toDateString()) return false;
       if (status && record.status !== status) return false;
       if (site && record.building !== site) return false;
       if (!normalized) return true;
@@ -65,7 +64,7 @@ function AdminVisitRecordsContent({
         .toLowerCase()
         .includes(normalized);
     });
-  }, [query, site, sourceRecords, status]);
+  }, [initialFilter, query, site, sourceRecords, status]);
 
   function openEditor(visit: VisitRecord) {
     setSelectedVisit(visit);
@@ -110,7 +109,7 @@ function AdminVisitRecordsContent({
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>‹ Back</Text>
         </Pressable>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{initialFilter === "today" ? "Today's Visitors" : title}</Text>
         <Pressable onPress={() => void refresh()}>
           <Text style={styles.refresh}>Refresh</Text>
         </Pressable>
