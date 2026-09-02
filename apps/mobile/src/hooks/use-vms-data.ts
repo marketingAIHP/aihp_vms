@@ -1,4 +1,6 @@
 import { useCallback, useEffect } from "react";
+import * as Notifications from "expo-notifications";
+import { AppState } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { apiClient } from "../lib/api-client";
@@ -14,6 +16,7 @@ const emptyMasterData: MasterData = {
 };
 
 let realtimeChannelSequence = 0;
+const shownForegroundNotificationIds = new Set<string>();
 
 type VmsDataPayload = {
   auditLogs: AuditItem[];
@@ -73,12 +76,36 @@ export function useVmsData() {
       }, 150);
     };
 
+    const handleNotificationInsert = (payload: { new?: Record<string, unknown> }) => {
+      scheduleRefresh();
+      const notification = payload.new;
+      const id = String(notification?.id ?? "");
+      if (!id || shownForegroundNotificationIds.has(id) || AppState.currentState !== "active") return;
+
+      shownForegroundNotificationIds.add(id);
+      if (shownForegroundNotificationIds.size > 100) shownForegroundNotificationIds.clear();
+      void Notifications.scheduleNotificationAsync({
+        content: {
+          title: String(notification?.title ?? "AIHP VMS update"),
+          body: String(notification?.message ?? "A visitor update is available."),
+          sound: "default",
+          data: { destination: "notifications", notificationId: id }
+        },
+        trigger: null
+      }).catch(() => {
+        // The in-app list still refreshes if notification permission is unavailable.
+      });
+    };
+
     const channel = supabase
       .channel(`vms-live-${session.userId}-${++realtimeChannelSequence}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
-        scheduleRefresh
+        (payload) => {
+          if (payload.eventType === "INSERT") handleNotificationInsert(payload);
+          else scheduleRefresh();
+        }
       )
       .on(
         "postgres_changes",

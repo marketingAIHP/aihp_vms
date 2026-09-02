@@ -53,15 +53,15 @@ export function SiteManagerReportsScreen() {
 
     try {
       const filename = await saveReportToDevice({
-        fileLabel: `AIHP_VMS_${session.siteName}_Visitor_Report`,
+        fileLabel: `AIHP_VMS_${session?.siteName ?? "Assigned_Site"}_Visitor_Report`,
         format,
         metadata: {
           generatedAt: new Date().toLocaleString(),
           period: "All available visitor records",
           recordCount: rows.length,
           reportName: "AIHP VMS Site Visitor Report",
-          site: session.siteName,
-          siteManager: session.name
+          site: session?.siteName ?? "Assigned Site",
+          siteManager: session?.name ?? "Site Manager"
         },
         rows
       });
@@ -142,7 +142,7 @@ export function SiteManagerReportsScreen() {
           <View style={[styles.card, item.status === "CHECKED_IN" ? styles.checkedInCard : styles.checkedOutCard]}>
             <View style={styles.rowBetween}>
               <Text style={styles.name}>{item.visitorName}</Text>
-              <Badge label={item.status} tone={item.status === "CHECKED_IN" ? "success" : "neutral"} />
+              <Badge label={item.status} tone={item.status === "CHECKED_IN" ? "success" : "danger"} />
             </View>
             <Text style={styles.meta}>{item.company || "Walk-in"} • {item.purpose}</Text>
             <Text style={styles.meta}>{item.checkedInAt ? new Date(item.checkedInAt).toLocaleString() : new Date(item.createdAt).toLocaleString()}</Text>

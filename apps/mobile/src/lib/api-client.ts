@@ -177,14 +177,16 @@ function toAuditItem(row: AuditRow): AuditItem {
   };
 }
 
-function toNotificationItem(row: NotificationRow): NotificationItem {
+function toNotificationItem(row: NotificationRow, readerId?: string): NotificationItem {
   return {
     id: row.id,
     title: row.title,
     message: row.message,
     createdAt: row.created_at,
     targetRoles: normalizeTargetRoles(row.target_roles),
-    readBy: row.is_read && row.user_id ? [row.user_id] : []
+    // Broadcast notifications have no user_id. They still need to be shown as
+    // read for the current device after the user opens them.
+    readBy: row.is_read ? [readerId ?? row.user_id ?? "read"] : []
   };
 }
 
@@ -369,7 +371,7 @@ export const apiClient = {
     }
 
     return removeDuplicateNotifications(
-      (data ?? []).map((item) => toNotificationItem(item as NotificationRow))
+      (data ?? []).map((item) => toNotificationItem(item as NotificationRow, userId))
     );
   },
 

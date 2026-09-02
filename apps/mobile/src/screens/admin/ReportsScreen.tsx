@@ -74,7 +74,7 @@ function getStatusTone(status: VisitRecord["status"]) {
     return "success" as const;
   }
   if (status === "CHECKED_OUT") {
-    return "neutral" as const;
+    return "danger" as const;
   }
   return "info" as const;
 }

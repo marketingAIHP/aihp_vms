@@ -10,7 +10,7 @@ function toneForStatus(status: VisitRecord["status"]): "neutral" | "info" | "suc
     return "success";
   }
   if (status === "CHECKED_OUT") {
-    return "neutral";
+    return "danger";
   }
   return "info";
 }
@@ -44,7 +44,7 @@ export function VisitListCard({
       ) : (
         <View style={styles.list}>
           {records.map((record) => (
-            <View key={record.id} style={styles.row}>
+            <View key={record.id} style={[styles.row, record.status === "CHECKED_IN" ? styles.checkedInRow : styles.checkedOutRow]}>
               <View style={styles.copy}>
                 <Text style={styles.name}>{record.visitorName}</Text>
                 <Text style={styles.meta}>
@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EEF1F4"
   },
+  checkedInRow: { backgroundColor: "#ecfdf5", borderColor: "#86efac" },
+  checkedOutRow: { backgroundColor: "#fef2f2", borderColor: "#fca5a5" },
   copy: {
     flex: 1,
     gap: 4
