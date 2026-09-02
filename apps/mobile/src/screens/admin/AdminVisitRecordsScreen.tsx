@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs
   },
   checkedInCard: { backgroundColor: "#ecfdf5", borderColor: "#86efac" },
-  checkedOutCard: { backgroundColor: "#f8fafc", borderColor: "#cbd5e1" },
+  checkedOutCard: { backgroundColor: "#fef2f2", borderColor: "#fca5a5" },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",

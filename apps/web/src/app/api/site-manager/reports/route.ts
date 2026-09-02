@@ -6,7 +6,11 @@ export async function GET() {
   try {
     const session = await requireApiRole("site_manager");
     const profile = await fetchProfileByEmail(session.email);
-    const scopedVisits = await fetchVisits({ site: profile?.company_name ?? "" });
+    const assignedSite = profile?.company_name?.trim();
+    if (!assignedSite) {
+      return NextResponse.json({ message: "No site is assigned to this site manager." }, { status: 403 });
+    }
+    const scopedVisits = await fetchVisits({ site: assignedSite });
 
     return NextResponse.json({
       visits: scopedVisits,

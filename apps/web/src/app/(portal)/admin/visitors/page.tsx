@@ -129,14 +129,14 @@ export default function AdminVisitorsPage() {
             </TableHeader>
             <TableBody>
               {data?.visitors.map((visitor) => (
-                <TableRow key={visitor.id} className={visitor.status === "CHECKED_IN" ? "bg-emerald-50/70 hover:bg-emerald-100/70" : "bg-slate-50/80 hover:bg-slate-100/80"}>
+                <TableRow key={visitor.id} className={visitor.status === "CHECKED_IN" ? "bg-emerald-50/70 hover:bg-emerald-100/70" : "bg-red-50/70 hover:bg-red-100/70"}>
                   <TableCell>
                     <div className="font-medium">{visitor.visitorName}</div>
                     <div className="text-xs text-muted-foreground">{visitor.companyName}</div>
                   </TableCell>
                   <TableCell>{visitor.companyToVisit || visitor.siteName || "-"}</TableCell>
                   <TableCell>{visitor.personToMeet}</TableCell>
-                  <TableCell><Badge className={visitor.status === "CHECKED_IN" ? "border-emerald-300 bg-emerald-100 text-emerald-800" : "border-slate-300 bg-slate-100 text-slate-700"} variant="outline">{visitor.status}</Badge></TableCell>
+                  <TableCell><Badge className={visitor.status === "CHECKED_IN" ? "border-emerald-300 bg-emerald-100 text-emerald-800" : "border-red-300 bg-red-100 text-red-800"} variant="outline">{visitor.status}</Badge></TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {visitor.checkInAt ? `In: ${formatDateTime(visitor.checkInAt)}` : "Not checked in"}
                     <br />

@@ -37,13 +37,13 @@ export default function SiteManagerVisitorsPage() {
           </TableHeader>
           <TableBody>
             {data?.visits.map((visit) => (
-              <TableRow key={visit.id}>
+              <TableRow key={visit.id} className={visit.status === "CHECKED_IN" ? "bg-emerald-50/70 hover:bg-emerald-100/70" : "bg-red-50/70 hover:bg-red-100/70"}>
                 <TableCell>
                   <div className="font-medium">{visit.visitorName}</div>
                   <div className="text-xs text-muted-foreground">{visit.companyName}</div>
                 </TableCell>
                 <TableCell>{visit.personToMeet}</TableCell>
-                <TableCell><Badge variant="outline">{visit.status}</Badge></TableCell>
+                <TableCell><Badge className={visit.status === "CHECKED_IN" ? "border-emerald-300 bg-emerald-100 text-emerald-800" : "border-red-300 bg-red-100 text-red-800"} variant="outline">{visit.status}</Badge></TableCell>
                 <TableCell>{formatDateTime(visit.checkInAt)}</TableCell>
               </TableRow>
             ))}

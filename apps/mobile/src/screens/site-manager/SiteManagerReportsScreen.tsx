@@ -1,17 +1,19 @@
 import { router } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Activity, ChartColumnBig, CircleCheckBig, Users } from "lucide-react-native";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
+import { saveReportToDevice, type ReportExportFormat } from "../../lib/report-export";
 import { colors, spacing } from "../../theme";
-import { Badge } from "../../ui/components";
+import { AppButton, Badge } from "../../ui/components";
 import { countVisitsForToday, getActiveVisitors, getTodayVisitHistory } from "../admin/admin-utils";
 
 export function SiteManagerReportsScreen() {
   const { session } = useAuth();
   const { visits } = useVmsData();
+  const [format, setFormat] = useState<ReportExportFormat>("CSV");
 
   const records = useMemo(() => {
     if (!session) {
@@ -27,6 +29,46 @@ export function SiteManagerReportsScreen() {
 
   if (!session) {
     return null;
+  }
+
+  async function downloadReport() {
+    if (!records.length) {
+      Alert.alert("No records", "There are no visitor records to download for your assigned site.");
+      return;
+    }
+
+    const rows = records.map((visit) => ({
+      "Visitor Name": visit.visitorName,
+      "Phone Number": visit.mobile || "-",
+      Company: visit.company || "-",
+      "Company To Visit": visit.companyToVisit || visit.building,
+      "Person To Meet": visit.siteManagerName || "-",
+      Site: visit.building,
+      Purpose: visit.purpose || "-",
+      "Vehicle Number": visit.vehicleNumber || "-",
+      Status: visit.status.replaceAll("_", " "),
+      "Check-In Time": visit.checkedInAt ? new Date(visit.checkedInAt).toLocaleString() : "-",
+      "Check-Out Time": visit.checkedOutAt ? new Date(visit.checkedOutAt).toLocaleString() : "Not checked out"
+    }));
+
+    try {
+      const filename = await saveReportToDevice({
+        fileLabel: `AIHP_VMS_${session.siteName}_Visitor_Report`,
+        format,
+        metadata: {
+          generatedAt: new Date().toLocaleString(),
+          period: "All available visitor records",
+          recordCount: rows.length,
+          reportName: "AIHP VMS Site Visitor Report",
+          site: session.siteName,
+          siteManager: session.name
+        },
+        rows
+      });
+      Alert.alert("Report downloaded", `${filename} was saved to the selected device folder.`);
+    } catch (error) {
+      Alert.alert("Download failed", error instanceof Error ? error.message : "Unable to save the report.");
+    }
   }
 
   return (
@@ -81,11 +123,23 @@ export function SiteManagerReportsScreen() {
                 <Text style={styles.summaryLabel}>Total Visitors</Text>
               </View>
             </View>
+            <View style={styles.downloadCard}>
+              <Text style={styles.downloadTitle}>Download Visitor Report</Text>
+              <Text style={styles.downloadSubtitle}>The file includes only visitors for {session.siteName}.</Text>
+              <View style={styles.formatRow}>
+                {(["CSV", "Excel", "PDF"] as const).map((option) => (
+                  <Pressable key={option} onPress={() => setFormat(option)} style={[styles.formatButton, format === option && styles.formatButtonSelected]}>
+                    <Text style={[styles.formatText, format === option && styles.formatTextSelected]}>{option}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <AppButton title="Download Report" onPress={() => void downloadReport()} disabled={!records.length} />
+            </View>
           </View>
         }
         ListEmptyComponent={<Text style={styles.emptyText}>No visitor records are available for this site manager.</Text>}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <View style={[styles.card, item.status === "CHECKED_IN" ? styles.checkedInCard : styles.checkedOutCard]}>
             <View style={styles.rowBetween}>
               <Text style={styles.name}>{item.visitorName}</Text>
               <Badge label={item.status} tone={item.status === "CHECKED_IN" ? "success" : "neutral"} />
@@ -230,6 +284,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 2
   },
+  checkedInCard: { backgroundColor: "#ecfdf5", borderColor: "#86efac" },
+  checkedOutCard: { backgroundColor: "#fef2f2", borderColor: "#fca5a5" },
+  downloadCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm
+  },
+  downloadTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: "800" },
+  downloadSubtitle: { color: colors.secondaryText, fontSize: 13, lineHeight: 18 },
+  formatRow: { flexDirection: "row", gap: spacing.sm },
+  formatButton: { flex: 1, minHeight: 40, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center", backgroundColor: colors.cardBackground },
+  formatButtonSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  formatText: { color: colors.secondaryText, fontSize: 13, fontWeight: "700" },
+  formatTextSelected: { color: colors.primary },
   rowBetween: {
     flexDirection: "row",
     alignItems: "center",
