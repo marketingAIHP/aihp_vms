@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { formatIndiaDate, indiaDayBounds, indiaToday } from "@/lib/format";
 import type { AppRole, ReportSummary, SettingsRecord, SiteManagerRecord, SiteRecord, VisitRecord } from "@/lib/types";
 import {
   extractLegacyPhotoUrl,
@@ -255,9 +256,9 @@ export function buildMonthlyTrends(visits: VisitRecord[]) {
 }
 
 export function buildReportSummary(visits: VisitRecord[], totalSites: number, totalSiteManagers: number): ReportSummary {
-  const today = new Date().toDateString();
+  const today = indiaToday();
   return {
-    visitorsToday: visits.filter((visit) => new Date(visit.checkInAt).toDateString() === today).length,
+    visitorsToday: visits.filter((visit) => formatIndiaDate(visit.checkInAt) === today).length,
     checkedIn: visits.filter((visit) => visit.status === "CHECKED_IN").length,
     checkedOut: visits.filter((visit) => visit.status === "CHECKED_OUT").length,
     totalVisitors: visits.length,
@@ -266,30 +267,28 @@ export function buildReportSummary(visits: VisitRecord[], totalSites: number, to
   };
 }
 
-export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitorsToday" | "checkedIn" | "checkedOut" | "totalVisitors">> {
+export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitorsToday" | "checkedIn" | "checkedOut" | "totalVisitors"> & {
+  checkedInAll: number;
+  checkedOutAll: number;
+}> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) throw new Error("Supabase is not configured for the web app.");
 
-  const todayParts = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Asia/Kolkata",
-    year: "numeric"
-  }).formatToParts(new Date());
-  const today = ["year", "month", "day"].map((type) => todayParts.find((part) => part.type === type)?.value).join("-");
-  const todayStart = new Date(`${today}T00:00:00+05:30`);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+  const { todayStart, tomorrowStart } = indiaDayBounds();
+  const todayStartIso = todayStart.toISOString();
+  const tomorrowStartIso = tomorrowStart.toISOString();
   const activeVisits = () => supabase.from("visits").select("id", { count: "exact", head: true }).not("status", "in", "(CANCELLED,DENIED)");
 
-  const [total, checkedIn, checkedOut, visitorsToday] = await Promise.all([
+  const [total, checkedIn, checkedOut, visitorsToday, checkedInAll, checkedOutAll] = await Promise.all([
     activeVisits(),
+    supabase.from("visits").select("id", { count: "exact", head: true }).eq("status", "CHECKED_IN").is("exited_at", null).gte("checked_in_at", todayStartIso).lt("checked_in_at", tomorrowStartIso),
+    supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null).gte("exited_at", todayStartIso).lt("exited_at", tomorrowStartIso),
+    activeVisits().gte("checked_in_at", todayStartIso).lt("checked_in_at", tomorrowStartIso),
     supabase.from("visits").select("id", { count: "exact", head: true }).eq("status", "CHECKED_IN").is("exited_at", null),
-    supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null),
-    activeVisits().gte("checked_in_at", todayStart.toISOString()).lt("checked_in_at", tomorrowStart.toISOString())
+    supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null)
   ]);
 
-  for (const result of [total, checkedIn, checkedOut, visitorsToday]) {
+  for (const result of [total, checkedIn, checkedOut, visitorsToday, checkedInAll, checkedOutAll]) {
     if (result.error) throw new Error(result.error.message);
   }
 
@@ -297,7 +296,9 @@ export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitors
     totalVisitors: total.count ?? 0,
     checkedIn: checkedIn.count ?? 0,
     checkedOut: checkedOut.count ?? 0,
-    visitorsToday: visitorsToday.count ?? 0
+    visitorsToday: visitorsToday.count ?? 0,
+    checkedInAll: checkedInAll.count ?? 0,
+    checkedOutAll: checkedOutAll.count ?? 0
   };
 }
 

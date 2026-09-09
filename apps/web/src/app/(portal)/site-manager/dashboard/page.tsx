@@ -2,11 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/api";
+import { indiaToday } from "@/lib/format";
 import { MetricCard } from "@/components/app/metric-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function SiteManagerDashboardPage() {
+  const today = indiaToday();
   const { data } = useQuery({
     queryKey: ["site-manager-overview"],
     queryFn: () =>
@@ -27,10 +29,10 @@ export default function SiteManagerDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Today's Visitors" value={data.summary.todaysVisitors} helper="Checked in today" />
-        <MetricCard label="Checked In" value={data.summary.checkedInVisitors} helper="Currently on site" />
-        <MetricCard label="Checked Out" value={data.summary.checkedOutVisitors} helper="Completed visits" />
-        <MetricCard label="Total Visitors" value={data.summary.totalVisitors} helper="All walk-in records for your site" />
+        <MetricCard href={`/site-manager/visitors?date=${today}`} label="Today's Visitors" value={data.summary.todaysVisitors} helper="Checked in today" />
+        <MetricCard href={`/site-manager/visitors?status=CHECKED_IN&date=${today}`} label="Checked In" value={data.summary.checkedInVisitors} helper="Checked in today" />
+        <MetricCard href={`/site-manager/visitors?status=CHECKED_OUT&date=${today}`} label="Checked Out" value={data.summary.checkedOutVisitors} helper="Checked out today" />
+        <MetricCard href="/site-manager/visitors" label="Total Visitors" value={data.summary.totalVisitors} helper="All walk-in records for your site" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

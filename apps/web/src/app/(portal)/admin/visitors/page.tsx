@@ -20,9 +20,9 @@ type Visitor = VisitRecord;
 export default function AdminVisitorsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("status") ?? ""));
   const [site, setSite] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("date") ?? ""));
   const [editNotes, setEditNotes] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailVisitor, setDetailVisitor] = useState<Visitor | null>(null);
@@ -94,7 +94,7 @@ export default function AdminVisitorsPage() {
       <Card className="border-border/70">
         <CardHeader className="space-y-4">
           <CardTitle>Visitor Management</CardTitle>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <Input placeholder="Search visitor, email, phone, site" value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
               <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
@@ -113,6 +113,7 @@ export default function AdminVisitorsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
         </CardHeader>
         <CardContent>

@@ -9,7 +9,7 @@ import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, spacing } from "../../theme";
 import { StatsCard } from "../../components/admin/StatsCard";
 import { VisitListCard } from "../../components/admin/VisitListCard";
-import { countVisitsForToday, getActiveVisitors, getTodayVisitHistory } from "../admin/admin-utils";
+import { countVisitsForToday, getTodayVisitHistory, getTodaysCheckedIn } from "../admin/admin-utils";
 
 export function SiteManagerDashboard() {
   const { logout, session } = useAuth();
@@ -25,7 +25,7 @@ export function SiteManagerDashboard() {
     [currentSession.siteName, visits]
   );
   const totalVisitorsToday = useMemo(() => countVisitsForToday(assignedVisits), [assignedVisits]);
-  const checkedInVisitors = useMemo(() => getActiveVisitors(assignedVisits), [assignedVisits]);
+  const checkedInVisitors = useMemo(() => getTodaysCheckedIn(assignedVisits), [assignedVisits]);
   const checkedOutVisitors = useMemo(() => getTodayVisitHistory(assignedVisits), [assignedVisits]);
   const recentVisitors = useMemo(() => [...assignedVisits]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
@@ -72,8 +72,8 @@ export function SiteManagerDashboard() {
             icon="active"
             label="Checked-In"
             value={checkedInVisitors.length}
-            trend="Currently active inside the site"
-            onPress={() => router.push("/site-manager-visitors")}
+            trend="Checked in today"
+            onPress={() => router.push({ pathname: "/site-manager-visitors", params: { filter: "checked_in" } })}
           />
           <StatsCard
             iconColor={colors.warning}
@@ -81,8 +81,8 @@ export function SiteManagerDashboard() {
             icon="pending"
             label="Checked-Out"
             value={checkedOutVisitors.length}
-            trend="Visits completed today"
-            onPress={() => router.push("/site-manager-visitors")}
+            trend="Checked out today"
+            onPress={() => router.push({ pathname: "/site-manager-visitors", params: { filter: "checked_out" } })}
           />
           <StatsCard
             iconColor={colors.navyGrey}
@@ -91,7 +91,7 @@ export function SiteManagerDashboard() {
             label="Today's Visitors"
             value={totalVisitorsToday}
             trend="Recorded today for your assigned site"
-            onPress={() => router.push("/site-manager-visitors")}
+            onPress={() => router.push({ pathname: "/site-manager-visitors", params: { filter: "today" } })}
           />
         </View>
 

@@ -16,12 +16,21 @@ export function getRecentCheckIns(records: VisitRecord[]) {
     });
 }
 
+function isSameCalendarDay(iso: string | null | undefined, day = new Date()) {
+  if (!iso) {
+    return false;
+  }
+
+  return new Date(iso).toDateString() === day.toDateString();
+}
+
 export function getTodayVisitHistory(records: VisitRecord[]) {
-  const today = new Date().toDateString();
+  return records.filter((record) => isSameCalendarDay(record.checkedOutAt));
+}
+
+export function getTodaysCheckedIn(records: VisitRecord[]) {
   return records.filter(
-    (record) =>
-      record.checkedOutAt &&
-      new Date(record.checkedOutAt).toDateString() === today
+    (record) => record.status === "CHECKED_IN" && isSameCalendarDay(record.checkedInAt ?? record.createdAt)
   );
 }
 
@@ -34,9 +43,5 @@ export function getActiveUsers(records: UserRecord[]) {
 }
 
 export function countVisitsForToday(records: VisitRecord[]) {
-  const today = new Date().toDateString();
-  return records.filter((record) => {
-    const reference = record.checkedInAt ?? record.createdAt;
-    return new Date(reference).toDateString() === today;
-  }).length;
+  return records.filter((record) => isSameCalendarDay(record.checkedInAt ?? record.createdAt)).length;
 }

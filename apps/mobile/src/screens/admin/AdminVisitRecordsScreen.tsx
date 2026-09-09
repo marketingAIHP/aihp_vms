@@ -55,7 +55,14 @@ function AdminVisitRecordsContent({
   const records = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return sourceRecords.filter((record) => {
-      if (initialFilter === "today" && new Date(record.createdAt).toDateString() !== new Date().toDateString()) return false;
+      if (initialFilter === "today" && new Date(record.checkedInAt ?? record.createdAt).toDateString() !== new Date().toDateString()) return false;
+      if (initialFilter === "checked_in") {
+        if (record.status !== "CHECKED_IN") return false;
+        if (new Date(record.checkedInAt ?? record.createdAt).toDateString() !== new Date().toDateString()) return false;
+      }
+      if (initialFilter === "checked_out") {
+        if (!record.checkedOutAt || new Date(record.checkedOutAt).toDateString() !== new Date().toDateString()) return false;
+      }
       if (status && record.status !== status) return false;
       if (site && record.building !== site) return false;
       if (!normalized) return true;
@@ -109,7 +116,15 @@ function AdminVisitRecordsContent({
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>‹ Back</Text>
         </Pressable>
-        <Text style={styles.title}>{initialFilter === "today" ? "Today's Visitors" : title}</Text>
+        <Text style={styles.title}>
+          {initialFilter === "today"
+            ? "Today's Visitors"
+            : initialFilter === "checked_in"
+              ? "Today's Check-In"
+              : initialFilter === "checked_out"
+                ? "Today's Check-Out"
+                : title}
+        </Text>
         <Pressable onPress={() => void refresh()}>
           <Text style={styles.refresh}>Refresh</Text>
         </Pressable>

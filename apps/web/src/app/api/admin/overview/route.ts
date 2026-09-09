@@ -39,8 +39,8 @@ export async function GET() {
       summary,
       trends: buildMonthlyTrends(recentVisits),
       distribution: [
-        { name: "Checked In", value: summary.checkedIn },
-        { name: "Checked Out", value: summary.checkedOut }
+        { name: "Checked In", value: visitSummary.checkedInAll },
+        { name: "Checked Out", value: visitSummary.checkedOutAll }
       ],
       recentActivity: visitorActivity.map((item) => mapAudit(item))
     });

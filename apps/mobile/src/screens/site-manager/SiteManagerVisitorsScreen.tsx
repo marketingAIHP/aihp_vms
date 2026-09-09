@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,10 +6,12 @@ import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, spacing } from "../../theme";
 import { AppInput, Badge } from "../../ui/components";
+import { getTodayVisitHistory, getTodaysCheckedIn } from "../admin/admin-utils";
 
 export function SiteManagerVisitorsScreen() {
   const { session } = useAuth();
   const { visits } = useVmsData();
+  const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
   const [query, setQuery] = useState("");
 
   const records = useMemo(() => {
@@ -19,6 +21,16 @@ export function SiteManagerVisitorsScreen() {
 
     return visits.filter((visit) => {
       if (visit.building !== session.siteName) {
+        return false;
+      }
+
+      if (initialFilter === "today" && new Date(visit.checkedInAt ?? visit.createdAt).toDateString() !== new Date().toDateString()) {
+        return false;
+      }
+      if (initialFilter === "checked_in" && !getTodaysCheckedIn([visit]).length) {
+        return false;
+      }
+      if (initialFilter === "checked_out" && !getTodayVisitHistory([visit]).length) {
         return false;
       }
 
@@ -38,11 +50,20 @@ export function SiteManagerVisitorsScreen() {
         .toLowerCase()
         .includes(normalized);
     });
-  }, [query, session, visits]);
+  }, [initialFilter, query, session, visits]);
 
   if (!session) {
     return null;
   }
+
+  const title =
+    initialFilter === "today"
+      ? "Today's Visitors"
+      : initialFilter === "checked_in"
+        ? "Today's Check-In"
+        : initialFilter === "checked_out"
+          ? "Today's Check-Out"
+          : "My Visitors";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -50,7 +71,7 @@ export function SiteManagerVisitorsScreen() {
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>‹ Back</Text>
         </Pressable>
-        <Text style={styles.title}>My Visitors</Text>
+        <Text style={styles.title}>{title}</Text>
         <View style={styles.placeholder} />
       </View>
 

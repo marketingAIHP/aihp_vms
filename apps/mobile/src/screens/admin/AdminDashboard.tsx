@@ -11,9 +11,9 @@ import { useVmsData } from "../../hooks/use-vms-data";
 import { colors, spacing } from "../../theme";
 import {
   countVisitsForToday,
-  getActiveVisitors,
   getRecentCheckIns,
   getTodayVisitHistory,
+  getTodaysCheckedIn,
 } from "./admin-utils";
 
 export function AdminDashboard() {
@@ -22,7 +22,7 @@ export function AdminDashboard() {
 
   const totalVisitors = useMemo(() => visits.length, [visits]);
   const todayVisitors = useMemo(() => countVisitsForToday(visits), [visits]);
-  const activeVisitors = useMemo(() => getActiveVisitors(visits), [visits]);
+  const activeVisitors = useMemo(() => getTodaysCheckedIn(visits), [visits]);
   const checkedOutVisitors = useMemo(() => getTodayVisitHistory(visits), [visits]);
   const recentCheckIns = useMemo(() => getRecentCheckIns(visits).slice(0, 5), [visits]);
   const todayHistory = useMemo(() => getTodayVisitHistory(visits).slice(0, 5), [visits]);
@@ -102,8 +102,8 @@ export function AdminDashboard() {
             icon="active"
             label="Checked-In Visitors"
             value={activeVisitors.length}
-            trend="Currently inside the premises"
-            onPress={() => router.push("/admin-live-monitoring")}
+            trend="Checked in today"
+            onPress={() => router.push({ pathname: "/admin-visits", params: { filter: "checked_in" } })}
           />
           <StatsCard
             iconColor={colors.warning}
@@ -111,8 +111,8 @@ export function AdminDashboard() {
             icon="pending"
             label="Checked-Out Visitors"
             value={checkedOutVisitors.length}
-            trend="Completed today"
-            onPress={() => router.push("/admin-visit-history")}
+            trend="Checked out today"
+            onPress={() => router.push({ pathname: "/admin-visits", params: { filter: "checked_out" } })}
           />
           <StatsCard
             iconColor={colors.navyGrey}

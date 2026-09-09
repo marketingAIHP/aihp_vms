@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
+import { formatIndiaDate, indiaToday } from "@/lib/format";
 import { fetchNotifications, fetchProfileByEmail, fetchVisits, mapNotification } from "@/lib/server/live-data";
 
 export async function GET() {
@@ -13,13 +14,13 @@ export async function GET() {
     ]);
 
     const scopedVisits = visits;
-    const today = new Date().toDateString();
+    const today = indiaToday();
 
     return NextResponse.json({
       summary: {
-        todaysVisitors: scopedVisits.filter((visit) => new Date(visit.checkInAt).toDateString() === today).length,
-        checkedInVisitors: scopedVisits.filter((visit) => visit.status === "CHECKED_IN").length,
-        checkedOutVisitors: scopedVisits.filter((visit) => visit.status === "CHECKED_OUT").length,
+        todaysVisitors: scopedVisits.filter((visit) => formatIndiaDate(visit.checkInAt) === today).length,
+        checkedInVisitors: scopedVisits.filter((visit) => visit.status === "CHECKED_IN" && formatIndiaDate(visit.checkInAt) === today).length,
+        checkedOutVisitors: scopedVisits.filter((visit) => visit.status === "CHECKED_OUT" && formatIndiaDate(visit.checkOutAt ?? "") === today).length,
         totalVisitors: scopedVisits.length
       },
       visits: scopedVisits.slice(0, 5),

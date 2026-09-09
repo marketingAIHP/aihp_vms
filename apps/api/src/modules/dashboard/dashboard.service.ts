@@ -40,8 +40,12 @@ export class DashboardService {
 
     const [totalVisits, checkedIn, checkedOut, visitorsToday, visits] = await this.prisma.$transaction([
       this.prisma.visit.count({ where }),
-      this.prisma.visit.count({ where: { ...where, status: "CHECKED_IN" } }),
-      this.prisma.visit.count({ where: { ...where, status: { in: ["EXITED", "CHECKED_OUT"] } } }),
+      this.prisma.visit.count({
+        where: { ...where, status: "CHECKED_IN", checkedInAt: { gte: startOfToday, lt: endOfToday } }
+      }),
+      this.prisma.visit.count({
+        where: { ...where, status: { in: ["EXITED", "CHECKED_OUT"] }, checkedOutAt: { gte: startOfToday, lt: endOfToday } }
+      }),
       this.prisma.visit.count({
         where: { ...where, checkedInAt: { gte: startOfToday, lt: endOfToday } }
       }),
