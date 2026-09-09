@@ -1,4 +1,4 @@
--- Automatic visitor checkout at 12:00 AM India Standard Time (IST).
+-- Automatic visitor checkout at 11:59 PM India Standard Time (IST).
 -- Run once in the Supabase SQL Editor after the production source-of-truth scripts.
 -- This is idempotent: it updates the function and replaces the scheduled job.
 
@@ -49,7 +49,7 @@ begin
       'AUTO_CHECK_OUT',
       'visits',
       id,
-      format('Auto checked out visitor %s at midnight IST.', visitor_name)
+      format('Auto checked out visitor %s at 11:59 PM IST.', visitor_name)
     from checked_out
     returning id
   )
@@ -59,15 +59,18 @@ begin
 end;
 $$;
 
--- Supabase pg_cron runs in UTC by default. 18:30 UTC is 12:00 AM IST.
+-- Supabase pg_cron runs in UTC by default. 18:29 UTC is 11:59 PM IST.
 create extension if not exists pg_cron with schema extensions;
 
 select cron.unschedule(jobid)
 from cron.job
-where jobname = 'auto-checkout-visitors-at-midnight-ist';
+where jobname in (
+  'auto-checkout-visitors-at-midnight-ist',
+  'auto-checkout-visitors-at-2359-ist'
+);
 
 select cron.schedule(
-  'auto-checkout-visitors-at-midnight-ist',
-  '30 18 * * *',
+  'auto-checkout-visitors-at-2359-ist',
+  '29 18 * * *',
   'select public.auto_checkout_open_visits();'
 );
