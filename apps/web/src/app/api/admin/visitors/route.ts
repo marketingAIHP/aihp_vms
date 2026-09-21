@@ -10,15 +10,17 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")?.trim().toLowerCase();
     const status = searchParams.get("status")?.trim();
     const site = searchParams.get("site")?.trim();
-    const date = searchParams.get("date")?.trim();
+    const legacyDate = searchParams.get("date")?.trim();
+    const fromDate = searchParams.get("fromDate")?.trim() || legacyDate;
+    const toDate = searchParams.get("toDate")?.trim() || legacyDate;
 
     const [visits, auditLogs] = await Promise.all([fetchVisits(), fetchAuditLogs(10)]);
 
     const filtered = visits.filter((visit) => {
-      if (date) {
-        const reference = status === "CHECKED_OUT" ? visit.checkOutAt : visit.checkInAt;
-        if (formatIndiaDate(reference ?? "") !== date) return false;
-      }
+      const checkInDate = formatIndiaDate(visit.checkInAt ?? "");
+      if ((fromDate || toDate) && !checkInDate) return false;
+      if (fromDate && checkInDate < fromDate) return false;
+      if (toDate && checkInDate > toDate) return false;
       if (site && visit.siteName !== site && visit.siteId !== site) return false;
       if (status && visit.status !== status) return false;
       if (search) {

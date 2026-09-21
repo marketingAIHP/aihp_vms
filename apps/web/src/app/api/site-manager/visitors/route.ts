@@ -15,13 +15,15 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams;
     const search = searchParams.get("search")?.trim().toLowerCase();
     const status = searchParams.get("status")?.trim();
-    const date = searchParams.get("date")?.trim();
+    const legacyDate = searchParams.get("date")?.trim();
+    const fromDate = searchParams.get("fromDate")?.trim() || legacyDate;
+    const toDate = searchParams.get("toDate")?.trim() || legacyDate;
     const scopedVisits = visits.filter((visit) => {
         if (status && visit.status !== status) return false;
-        if (date) {
-          const reference = status === "CHECKED_OUT" ? visit.checkOutAt : visit.checkInAt;
-          if (formatIndiaDate(reference ?? "") !== date) return false;
-        }
+        const checkInDate = formatIndiaDate(visit.checkInAt ?? "");
+        if ((fromDate || toDate) && !checkInDate) return false;
+        if (fromDate && checkInDate < fromDate) return false;
+        if (toDate && checkInDate > toDate) return false;
         if (!search) return true;
         return [visit.visitorName, visit.mobileNumber, visit.companyName, visit.personToMeet]
           .join(" ")

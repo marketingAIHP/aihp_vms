@@ -22,18 +22,27 @@ export default function AdminVisitorsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("status") ?? ""));
   const [site, setSite] = useState("");
-  const [date, setDate] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("date") ?? ""));
+  const [fromDate, setFromDate] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("fromDate") ?? params.get("date") ?? "";
+  });
+  const [toDate, setToDate] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("toDate") ?? params.get("date") ?? "";
+  });
   const [editNotes, setEditNotes] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailVisitor, setDetailVisitor] = useState<Visitor | null>(null);
 
   const { data } = useQuery({
-    queryKey: ["admin-visitors", search, status, site, date],
+    queryKey: ["admin-visitors", search, status, site, fromDate, toDate],
     queryFn: () =>
       fetchJson<{
         visitors: Visitor[];
         auditLogs: Array<{ id: string; detail: string; createdAt: string }>;
-      }>(`/api/admin/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}&date=${encodeURIComponent(date)}`),
+      }>(`/api/admin/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&site=${encodeURIComponent(site)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`),
   });
   const { data: sitesData } = useQuery({
     queryKey: ["admin-sites", "visitor-filters"],
@@ -43,7 +52,9 @@ export default function AdminVisitorsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setStatus(params.get("status") ?? "");
-    setDate(params.get("date") ?? "");
+    const linkedDate = params.get("date") ?? "";
+    setFromDate(params.get("fromDate") ?? linkedDate);
+    setToDate(params.get("toDate") ?? linkedDate);
   }, []);
 
   const updateMutation = useMutation({
@@ -94,7 +105,7 @@ export default function AdminVisitorsPage() {
       <Card className="border-border/70">
         <CardHeader className="space-y-4">
           <CardTitle>Visitor Management</CardTitle>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             <Input placeholder="Search visitor, email, phone, site" value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
               <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
@@ -113,7 +124,14 @@ export default function AdminVisitorsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <label className="space-y-1 text-xs font-medium text-muted-foreground">
+              <span>From date</span>
+              <Input aria-label="Check-in from date" max={toDate || undefined} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </label>
+            <label className="space-y-1 text-xs font-medium text-muted-foreground">
+              <span>To date</span>
+              <Input aria-label="Check-in to date" min={fromDate || undefined} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </label>
           </div>
         </CardHeader>
         <CardContent>

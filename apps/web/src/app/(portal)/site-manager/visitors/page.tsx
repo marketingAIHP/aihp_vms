@@ -13,34 +13,43 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function SiteManagerVisitorsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("status") ?? ""));
-  const [date, setDate] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("date") ?? ""));
+  const [fromDate, setFromDate] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("fromDate") ?? params.get("date") ?? "";
+  });
+  const [toDate, setToDate] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("toDate") ?? params.get("date") ?? "";
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setStatus(params.get("status") ?? "");
-    setDate(params.get("date") ?? "");
+    const linkedDate = params.get("date") ?? "";
+    setFromDate(params.get("fromDate") ?? linkedDate);
+    setToDate(params.get("toDate") ?? linkedDate);
   }, []);
 
   const { data } = useQuery({
-    queryKey: ["site-manager-visitors", search, status, date],
+    queryKey: ["site-manager-visitors", search, status, fromDate, toDate],
     queryFn: () =>
       fetchJson<{
         visits: Array<Record<string, string>>;
-      }>(`/api/site-manager/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&date=${encodeURIComponent(date)}`),
+      }>(`/api/site-manager/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`),
   });
 
   const title = useMemo(() => {
-    if (status === "CHECKED_IN" && date) return "Today's Check-In Visitors";
-    if (status === "CHECKED_OUT" && date) return "Today's Check-Out Visitors";
-    if (date) return "Today's Visitors";
+    if (fromDate || toDate) return "Visitors by Check-In Date";
     return "Visitors";
-  }, [date, status]);
+  }, [fromDate, toDate]);
 
   return (
     <Card className="border-border/70">
       <CardHeader className="space-y-4">
         <CardTitle>{title}</CardTitle>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Input placeholder="Search visitors, phone, company" value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
@@ -50,7 +59,14 @@ export default function SiteManagerVisitorsPage() {
               <SelectItem value="CHECKED_OUT">Checked Out</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <label className="space-y-1 text-xs font-medium text-muted-foreground">
+            <span>From date</span>
+            <Input aria-label="Check-in from date" max={toDate || undefined} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          </label>
+          <label className="space-y-1 text-xs font-medium text-muted-foreground">
+            <span>To date</span>
+            <Input aria-label="Check-in to date" min={fromDate || undefined} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          </label>
         </div>
       </CardHeader>
       <CardContent>
