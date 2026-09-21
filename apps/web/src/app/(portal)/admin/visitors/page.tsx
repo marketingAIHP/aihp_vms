@@ -106,31 +106,40 @@ export default function AdminVisitorsPage() {
         <CardHeader className="space-y-4">
           <CardTitle>Visitor Management</CardTitle>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <Input placeholder="Search visitor, email, phone, site" value={search} onChange={(e) => setSearch(e.target.value)} />
-            <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="CHECKED_IN">Checked In</SelectItem>
-                <SelectItem value="CHECKED_OUT">Checked Out</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={site || "all"} onValueChange={(value) => setSite(value === "all" ? "" : value)}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Filter by site" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sites</SelectItem>
-                {sitesData?.sites.filter((item) => item.isActive).map((item) => (
-                  <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <label className="space-y-1 text-xs font-medium text-muted-foreground">
-              <span>From date</span>
-              <Input aria-label="Check-in from date" max={toDate || undefined} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              <span>Search</span>
+              <Input className="h-10" placeholder="Visitor, email, phone, site" value={search} onChange={(e) => setSearch(e.target.value)} />
             </label>
-            <label className="space-y-1 text-xs font-medium text-muted-foreground">
+            <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+              <span>Status</span>
+              <Select value={status || "all"} onValueChange={(value) => setStatus(value === "all" ? "" : value)}>
+                <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Filter by status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="CHECKED_IN">Checked In</SelectItem>
+                  <SelectItem value="CHECKED_OUT">Checked Out</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+              <span>Site</span>
+              <Select value={site || "all"} onValueChange={(value) => setSite(value === "all" ? "" : value)}>
+                <SelectTrigger className="h-10 w-full"><SelectValue placeholder="Filter by site" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sites</SelectItem>
+                  {sitesData?.sites.filter((item) => item.isActive).map((item) => (
+                    <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              <span>From date</span>
+              <Input className="h-10" aria-label="Check-in from date" max={toDate || undefined} type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
               <span>To date</span>
-              <Input aria-label="Check-in to date" min={fromDate || undefined} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <Input className="h-10" aria-label="Check-in to date" min={fromDate || undefined} type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </label>
           </div>
         </CardHeader>
