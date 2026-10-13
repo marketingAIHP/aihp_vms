@@ -13,7 +13,7 @@ export function VisitorStatusChart({
   return (
     <Card className="border-border/70">
       <CardHeader>
-        <CardTitle>Visitor Status Distribution</CardTitle>
+        <CardTitle>Today&apos;s Visitor Status Distribution</CardTitle>
       </CardHeader>
       <CardContent className="h-80">
         <ResponsiveContainer width="100%" height="100%">

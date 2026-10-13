@@ -267,10 +267,7 @@ export function buildReportSummary(visits: VisitRecord[], totalSites: number, to
   };
 }
 
-export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitorsToday" | "checkedIn" | "checkedOut" | "totalVisitors"> & {
-  checkedInAll: number;
-  checkedOutAll: number;
-}> {
+export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitorsToday" | "checkedIn" | "checkedOut" | "totalVisitors">> {
   const supabase = getSupabaseAdminClient();
   if (!supabase) throw new Error("Supabase is not configured for the web app.");
 
@@ -279,16 +276,14 @@ export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitors
   const tomorrowStartIso = tomorrowStart.toISOString();
   const activeVisits = () => supabase.from("visits").select("id", { count: "exact", head: true }).not("status", "in", "(CANCELLED,DENIED)");
 
-  const [total, checkedIn, checkedOut, visitorsToday, checkedInAll, checkedOutAll] = await Promise.all([
+  const [total, checkedIn, checkedOut, visitorsToday] = await Promise.all([
     activeVisits(),
     supabase.from("visits").select("id", { count: "exact", head: true }).eq("status", "CHECKED_IN").is("exited_at", null).gte("checked_in_at", todayStartIso).lt("checked_in_at", tomorrowStartIso),
     supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null).gte("exited_at", todayStartIso).lt("exited_at", tomorrowStartIso),
-    activeVisits().gte("checked_in_at", todayStartIso).lt("checked_in_at", tomorrowStartIso),
-    supabase.from("visits").select("id", { count: "exact", head: true }).eq("status", "CHECKED_IN").is("exited_at", null),
-    supabase.from("visits").select("id", { count: "exact", head: true }).not("exited_at", "is", null)
+    activeVisits().gte("checked_in_at", todayStartIso).lt("checked_in_at", tomorrowStartIso)
   ]);
 
-  for (const result of [total, checkedIn, checkedOut, visitorsToday, checkedInAll, checkedOutAll]) {
+  for (const result of [total, checkedIn, checkedOut, visitorsToday]) {
     if (result.error) throw new Error(result.error.message);
   }
 
@@ -296,9 +291,7 @@ export async function fetchVisitSummary(): Promise<Pick<ReportSummary, "visitors
     totalVisitors: total.count ?? 0,
     checkedIn: checkedIn.count ?? 0,
     checkedOut: checkedOut.count ?? 0,
-    visitorsToday: visitorsToday.count ?? 0,
-    checkedInAll: checkedInAll.count ?? 0,
-    checkedOutAll: checkedOutAll.count ?? 0
+    visitorsToday: visitorsToday.count ?? 0
   };
 }
 
