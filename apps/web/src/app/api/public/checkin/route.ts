@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getRateLimitState } from "@/lib/server/public-rate-limit";
-import { getSupabaseAdminClient } from "@/lib/server/live-data";
+import { createAuditLog, getSupabaseAdminClient } from "@/lib/server/live-data";
 import { buildCheckInNotes } from "@/lib/server/visit-note-metadata";
 import {
   ALLOWED_PHOTO_TYPES,
@@ -268,7 +268,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Unable to complete visitor check-in." }, { status: 500 });
     }
 
-    await createNotifications(supabase, manager, visitorName, siteToken);
+    await Promise.all([
+      createNotifications(supabase, manager, visitorName, siteToken),
+      createAuditLog({
+        action: "CHECK_IN",
+        actorName: "Visitor",
+        actorRole: "site_manager",
+        detail: `Checked in visitor ${visitorName}`,
+        targetId: data.id,
+        targetTable: "visits"
+      })
+    ]).catch(() => undefined);
 
     return NextResponse.json({
       visit: {

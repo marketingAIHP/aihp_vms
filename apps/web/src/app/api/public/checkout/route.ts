@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRateLimitState } from "@/lib/server/public-rate-limit";
-import { getSupabaseAdminClient } from "@/lib/server/live-data";
+import { createAuditLog, getSupabaseAdminClient } from "@/lib/server/live-data";
 import {
   exceedsContentLength,
   isValidSiteToken,
@@ -170,7 +170,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Unable to complete visitor check-out." }, { status: 500 });
     }
 
-    await notifyCheckout(supabase, data as VisitRow);
+    await Promise.all([
+      notifyCheckout(supabase, data as VisitRow),
+      createAuditLog({
+        action: "CHECK_OUT",
+        actorName: "Visitor",
+        actorRole: "site_manager",
+        detail: `Checked out visitor ${(data as VisitRow).visitor_name}`,
+        targetId: data.id,
+        targetTable: "visits"
+      })
+    ]).catch(() => undefined);
 
     return NextResponse.json({
       visit: toVisitResponse(data as VisitRow),

@@ -34,6 +34,15 @@ export async function GET() {
       seenActivity.add(key);
       return true;
     }).slice(0, 6);
+    const recentActivity = visitorActivity.length > 0
+      ? visitorActivity.map((item) => mapAudit(item))
+      : recentVisits.slice(0, 6).map((visit) => ({
+          id: `visit-${visit.id}`,
+          action: visit.checkOutAt ? "CHECK_OUT" : "CHECK_IN",
+          detail: `${visit.checkOutAt ? "Checked out" : "Checked in"} visitor ${visit.visitorName}`,
+          actorEmail: "Visitor",
+          createdAt: visit.checkOutAt ?? visit.checkInAt
+        }));
 
     return NextResponse.json({
       summary,
@@ -42,7 +51,7 @@ export async function GET() {
         { name: "Checked In", value: visitSummary.checkedIn },
         { name: "Checked Out", value: visitSummary.checkedOut }
       ],
-      recentActivity: visitorActivity.map((item) => mapAudit(item))
+      recentActivity
     });
   } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

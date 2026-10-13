@@ -60,14 +60,18 @@ export default function AdminDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.recentActivity.map((item) => (
+              {data.recentActivity.length > 0 ? data.recentActivity.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.action}</TableCell>
                   <TableCell>{item.actorEmail}</TableCell>
                   <TableCell>{item.detail}</TableCell>
                   <TableCell className="text-right text-muted-foreground">{formatDateTime(item.createdAt)}</TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">No visitor activity yet.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
