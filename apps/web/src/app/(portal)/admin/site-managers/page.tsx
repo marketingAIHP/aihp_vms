@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { SiteRecord } from "@/lib/types";
 
 export default function AdminSiteManagersPage() {
@@ -174,5 +175,33 @@ export default function AdminSiteManagersPage() {
 }
 
 function SiteCheckboxes({ sites, selected, onChange }: { sites: SiteRecord[]; selected: string[]; onChange: (siteIds: string[]) => void }) {
-  return <fieldset className="grid gap-2 rounded-md border p-3"><legend className="px-1 text-xs text-muted-foreground">Assigned sites</legend>{sites.filter((site) => site.isActive).map((site) => <label className="flex cursor-pointer items-center gap-2 text-sm" key={site.id}><input type="checkbox" checked={selected.includes(site.id)} onChange={(event) => onChange(event.target.checked ? [...selected, site.id] : selected.filter((id) => id !== site.id))} />{site.name}</label>)}</fieldset>;
+  const activeSites = sites.filter((site) => site.isActive);
+  const label = !selected.length
+    ? "Select assigned sites"
+    : selected.length === 1
+      ? activeSites.find((site) => site.id === selected[0])?.name ?? "1 site selected"
+      : `${selected.length} sites selected`;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button className="w-full justify-between font-normal" type="button" variant="outline">
+          {label}<span className="text-muted-foreground">⌄</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-72 w-[var(--radix-dropdown-menu-trigger-width)]">
+        <DropdownMenuLabel>Assigned sites</DropdownMenuLabel>
+        {activeSites.map((site) => (
+          <DropdownMenuCheckboxItem
+            key={site.id}
+            checked={selected.includes(site.id)}
+            onSelect={(event) => event.preventDefault()}
+            onCheckedChange={(checked) => onChange(checked ? [...selected, site.id] : selected.filter((id) => id !== site.id))}
+          >
+            {site.name}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

@@ -2,15 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
 import { createAuditLog, fetchAssignedSites, fetchProfiles, fetchSites, getSupabaseAdminClient, mapSiteManagerRecord } from "@/lib/server/live-data";
 
-async function resolveSiteName(siteIdOrName: string) {
-  const value = siteIdOrName.trim();
-  if (!value) return "";
-
-  const sites = await fetchSites({ includeImages: false });
-  const matched = sites.find((site) => site.id === value || site.name === value);
-  return matched?.name ?? value;
-}
-
 export async function GET() {
   try {
     await requireApiRole("admin");

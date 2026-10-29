@@ -2,15 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/route-auth";
 import { createAuditLog, fetchSites, getSupabaseAdminClient } from "@/lib/server/live-data";
 
-async function resolveSiteName(siteIdOrName: string | undefined) {
-  const value = siteIdOrName?.trim();
-  if (!value) return undefined;
-
-  const sites = await fetchSites({ includeImages: false });
-  const matched = sites.find((site) => site.id === value || site.name === value);
-  return matched?.name ?? value;
-}
-
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireApiRole("admin");
