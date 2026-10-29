@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getApiSession } from "@/lib/route-auth";
-import { createAuditLog, createNotification, fetchProfileByEmail, fetchVisits, getSupabaseAdminClient } from "@/lib/server/live-data";
+import { createAuditLog, createNotification, fetchAssignedSiteNames, fetchProfileByEmail, fetchVisits, getSupabaseAdminClient } from "@/lib/server/live-data";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getApiSession(request);
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ message: "This visitor has already checked out." }, { status: 409 });
   }
 
-  if (session.role === "site_manager" && visit.siteManagerId !== profile?.id) {
+  if (session.role === "site_manager" && (!profile || !(await fetchAssignedSiteNames(profile)).includes(visit.siteName))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

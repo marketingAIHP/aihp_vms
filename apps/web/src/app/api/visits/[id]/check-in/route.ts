@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { createAuditLog, createNotification, fetchProfileByEmail, fetchVisits, getSupabaseAdminClient } from "@/lib/server/live-data";
+import { createAuditLog, createNotification, fetchAssignedSiteNames, fetchProfileByEmail, fetchVisits, getSupabaseAdminClient } from "@/lib/server/live-data";
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -16,7 +16,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ message: "Visit not found." }, { status: 404 });
   }
 
-  if (session.role === "site_manager" && visit.siteManagerId !== profile?.id) {
+  if (session.role === "site_manager" && (!profile || !(await fetchAssignedSiteNames(profile)).includes(visit.siteName))) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

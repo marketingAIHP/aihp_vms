@@ -25,6 +25,9 @@ export interface SiteManagerRecord {
   phone: string;
   siteId: string;
   siteName: string;
+  /** All sites this manager is allowed to access. */
+  siteIds: string[];
+  siteNames: string[];
   isActive: boolean;
 }
 

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SiteRecord } from "@/lib/types";
 
@@ -18,12 +17,12 @@ export default function AdminSiteManagersPage() {
     name: "",
     email: "",
     password: "",
-    siteId: "",
+    siteIds: [] as string[],
     isActive: true,
   });
   const [editingManager, setEditingManager] = useState<Record<string, string | boolean> | null>(null);
   const [editName, setEditName] = useState("");
-  const [editSiteId, setEditSiteId] = useState("");
+  const [editSiteIds, setEditSiteIds] = useState<string[]>([]);
   const [editPassword, setEditPassword] = useState("");
 
   const { data } = useQuery({
@@ -43,7 +42,7 @@ export default function AdminSiteManagersPage() {
       }),
     onSuccess: () => {
       toast.success("Site Manager created.");
-      setForm({ name: "", email: "", password: "", siteId: "", isActive: true });
+      setForm({ name: "", email: "", password: "", siteIds: [], isActive: true });
       queryClient.invalidateQueries({ queryKey: ["admin-site-managers"] });
     },
     onError: (error) => {
@@ -67,7 +66,7 @@ export default function AdminSiteManagersPage() {
       if (!editingManager) throw new Error("No site manager selected.");
       return fetchJson(`/api/admin/site-managers/${String(editingManager.id)}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: editName, siteId: editSiteId, ...(editPassword ? { password: editPassword } : {}) }),
+        body: JSON.stringify({ name: editName, siteIds: editSiteIds, ...(editPassword ? { password: editPassword } : {}) }),
       });
     },
     onSuccess: () => {
@@ -81,8 +80,7 @@ export default function AdminSiteManagersPage() {
   function openEditor(manager: Record<string, string | boolean>) {
     setEditingManager(manager);
     setEditName(String(manager.name));
-    const site = sitesData?.sites.find((item) => item.name === String(manager.siteName));
-    setEditSiteId(site?.id ?? String(manager.siteName));
+    setEditSiteIds(Array.isArray(manager.siteIds) ? manager.siteIds.map(String) : [String(manager.siteId)]);
     setEditPassword("");
   }
 
@@ -120,7 +118,7 @@ export default function AdminSiteManagersPage() {
                     <div className="font-medium">{String(manager.name)}</div>
                     <div className="text-xs text-muted-foreground">{String(manager.email)}</div>
                   </TableCell>
-                  <TableCell>{String(manager.siteName)}</TableCell>
+                  <TableCell>{Array.isArray(manager.siteNames) ? manager.siteNames.join(", ") : String(manager.siteName)}</TableCell>
                   <TableCell>{manager.isActive ? "Active" : "Inactive"}</TableCell>
                   <TableCell className="space-x-2 text-right">
                     <Button size="sm" variant="outline" onClick={() => openEditor(manager)}>Edit</Button>
@@ -149,12 +147,9 @@ export default function AdminSiteManagersPage() {
         <CardContent className="space-y-4">
           <Input placeholder="Name" value={form.name} onChange={(e) => setForm((c) => ({ ...c, name: e.target.value }))} />
           <Input placeholder="Email" value={form.email} onChange={(e) => setForm((c) => ({ ...c, email: e.target.value }))} />
-          <Select value={form.siteId} onValueChange={(siteId) => setForm((current) => ({ ...current, siteId }))}>
-            <SelectTrigger><SelectValue placeholder="Select assigned site" /></SelectTrigger>
-            <SelectContent>{sitesData?.sites.filter((site) => site.isActive).map((site) => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent>
-          </Select>
+          <SiteCheckboxes sites={sitesData?.sites ?? []} selected={form.siteIds} onChange={(siteIds) => setForm((current) => ({ ...current, siteIds }))} />
           <Input type="password" placeholder="Password (minimum 8 characters)" value={form.password} onChange={(e) => setForm((c) => ({ ...c, password: e.target.value }))} />
-          <Button className="w-full" disabled={!form.name.trim() || !form.email.trim() || !form.siteId || form.password.length < 8 || createSiteManager.isPending} onClick={() => createSiteManager.mutate()}>
+          <Button className="w-full" disabled={!form.name.trim() || !form.email.trim() || !form.siteIds.length || form.password.length < 8 || createSiteManager.isPending} onClick={() => createSiteManager.mutate()}>
             Create Site Manager
           </Button>
         </CardContent>
@@ -165,18 +160,19 @@ export default function AdminSiteManagersPage() {
           <DialogHeader><DialogTitle>Edit Site Manager</DialogTitle></DialogHeader>
           <div className="grid gap-4">
             <Input placeholder="Name" value={editName} onChange={(event) => setEditName(event.target.value)} />
-            <Select value={editSiteId} onValueChange={setEditSiteId}>
-              <SelectTrigger><SelectValue placeholder="Select assigned site" /></SelectTrigger>
-              <SelectContent>{sitesData?.sites.filter((site) => site.isActive).map((site) => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <SiteCheckboxes sites={sitesData?.sites ?? []} selected={editSiteIds} onChange={setEditSiteIds} />
             <Input type="password" placeholder="New password (leave blank to keep current)" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingManager(null)}>Cancel</Button>
-            <Button disabled={!editName.trim() || !editSiteId || (editPassword.length > 0 && editPassword.length < 8) || editSiteManager.isPending} onClick={() => editSiteManager.mutate()}>{editSiteManager.isPending ? "Saving..." : "Save Changes"}</Button>
+            <Button disabled={!editName.trim() || !editSiteIds.length || (editPassword.length > 0 && editPassword.length < 8) || editSiteManager.isPending} onClick={() => editSiteManager.mutate()}>{editSiteManager.isPending ? "Saving..." : "Save Changes"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function SiteCheckboxes({ sites, selected, onChange }: { sites: SiteRecord[]; selected: string[]; onChange: (siteIds: string[]) => void }) {
+  return <fieldset className="grid gap-2 rounded-md border p-3"><legend className="px-1 text-xs text-muted-foreground">Assigned sites</legend>{sites.filter((site) => site.isActive).map((site) => <label className="flex cursor-pointer items-center gap-2 text-sm" key={site.id}><input type="checkbox" checked={selected.includes(site.id)} onChange={(event) => onChange(event.target.checked ? [...selected, site.id] : selected.filter((id) => id !== site.id))} />{site.name}</label>)}</fieldset>;
 }

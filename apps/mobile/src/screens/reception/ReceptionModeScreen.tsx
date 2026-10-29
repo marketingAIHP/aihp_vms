@@ -268,7 +268,7 @@ function ReceptionModeContent() {
               </View>
 
               <View style={styles.selectionCard}>
-                {deviceSite ? <><Text style={styles.sectionLabel}>This device is assigned to</Text><Text style={styles.lockedSite}>{deviceSite}</Text></> : <><Text style={styles.sectionLabel}>Activate this device</Text><Text style={styles.activationHelp}>Enter the activation code created in Admin Settings to permanently assign this device to a site.</Text><AppInput value={activationCode} autoCapitalize="characters" onChangeText={setActivationCode} placeholder="Device activation code" /><AppButton title={activating ? "Activating..." : "Activate Device"} disabled={!activationCode.trim() || activating} onPress={() => void activateDevice()} /></>}
+                {deviceSite ? <Text style={styles.lockedSite}>{deviceSite}</Text> : <><Text style={styles.sectionLabel}>Activate this device</Text><Text style={styles.activationHelp}>Enter the activation code created in Admin Settings to permanently assign this device to a site.</Text><AppInput value={activationCode} autoCapitalize="characters" onChangeText={setActivationCode} placeholder="Device activation code" /><AppButton title={activating ? "Activating..." : "Activate Device"} disabled={!activationCode.trim() || activating} onPress={() => void activateDevice()} /></>}
 
                 {deviceSite && selectedSite ? (
                   <>

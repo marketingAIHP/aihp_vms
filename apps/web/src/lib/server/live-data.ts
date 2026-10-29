@@ -192,16 +192,55 @@ export async function mapVisitRecord(row: VisitRow, includePhoto = false): Promi
   };
 }
 
-export function mapSiteManagerRecord(row: ProfileRow): SiteManagerRecord {
+export function mapSiteManagerRecord(row: ProfileRow, assignedSites?: SiteRecord[]): SiteManagerRecord {
+  const sites = assignedSites?.length
+    ? assignedSites
+    : row.company_name
+      ? [{ id: row.company_name, name: row.company_name, address: "", isActive: true }]
+      : [];
   return {
     id: row.id,
     name: row.full_name,
     email: row.email ?? "",
     phone: row.phone_number ?? "",
-    siteId: row.company_name ?? "",
-    siteName: row.company_name ?? "",
+    siteId: sites[0]?.id ?? "",
+    siteName: sites[0]?.name ?? "",
+    siteIds: sites.map((site) => site.id),
+    siteNames: sites.map((site) => site.name),
     isActive: row.is_active !== false
   };
+}
+
+/** Returns the sites a manager may access. The profile value is a safe legacy fallback. */
+export async function fetchAssignedSites(profile: Pick<ProfileRow, "id" | "company_name">): Promise<SiteRecord[]> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) throw new Error("Supabase is not configured for the web app.");
+
+  const { data, error } = await supabase
+    .from("site_manager_site_assignments")
+    .select("site_id, master_data!inner(id, value, address, is_active)")
+    .eq("manager_id", profile.id);
+
+  // Install the supplied migration before deploying this change. The fallback
+  // preserves access for existing single-site managers until then.
+  if (error) {
+    if (error.message.toLowerCase().includes("site_manager_site_assignments")) {
+      return profile.company_name ? [{ id: profile.company_name, name: profile.company_name, address: "", isActive: true }] : [];
+    }
+    throw new Error(error.message);
+  }
+
+  const sites = (data ?? []).flatMap((row: any) => {
+    const site = Array.isArray(row.master_data) ? row.master_data[0] : row.master_data;
+    return site && site.is_active !== false ? [{ id: site.id, name: site.value, address: site.address ?? "", isActive: true }] : [];
+  });
+  return sites.length || !profile.company_name
+    ? sites
+    : [{ id: profile.company_name, name: profile.company_name, address: "", isActive: true }];
+}
+
+export async function fetchAssignedSiteNames(profile: Pick<ProfileRow, "id" | "company_name">) {
+  return (await fetchAssignedSites(profile)).map((site) => site.name);
 }
 
 export function mapNotification(row: NotificationRow) {

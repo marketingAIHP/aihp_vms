@@ -23,6 +23,7 @@ export default function SiteManagerVisitorsPage() {
     const params = new URLSearchParams(window.location.search);
     return params.get("toDate") ?? params.get("date") ?? "";
   });
+  const [site, setSite] = useState("all");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -33,11 +34,12 @@ export default function SiteManagerVisitorsPage() {
   }, []);
 
   const { data } = useQuery({
-    queryKey: ["site-manager-visitors", search, status, fromDate, toDate],
+    queryKey: ["site-manager-visitors", search, status, fromDate, toDate, site],
     queryFn: () =>
       fetchJson<{
         visits: Array<Record<string, string>>;
-      }>(`/api/site-manager/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`),
+        sites: Array<{ id: string; name: string }>;
+      }>(`/api/site-manager/visitors?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}${site === "all" ? "" : `&site=${encodeURIComponent(site)}`}`),
   });
 
   const title = useMemo(() => {
@@ -49,7 +51,11 @@ export default function SiteManagerVisitorsPage() {
     <Card className="border-border/70">
       <CardHeader className="space-y-4">
         <CardTitle>{title}</CardTitle>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+            <span>Site</span>
+            <Select value={site} onValueChange={setSite}><SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All assigned sites</SelectItem>{data?.sites.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}</SelectContent></Select>
+          </div>
           <label className="grid gap-1 text-xs font-medium text-muted-foreground">
             <span>Search</span>
             <Input className="h-10" placeholder="Visitors, phone, company" value={search} onChange={(e) => setSearch(e.target.value)} />

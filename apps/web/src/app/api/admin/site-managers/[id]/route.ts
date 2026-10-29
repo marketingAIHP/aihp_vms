@@ -20,7 +20,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       name?: string;
       password?: string;
       phone?: string;
-      siteId?: string;
+      siteIds?: string[];
+      siteId?: string; // accepted for old clients
     };
     const { id } = await params;
     const supabase = getSupabaseAdminClient();
@@ -43,9 +44,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (typeof body.phone === "string") profilePatch.phone_number = body.phone.trim() || null;
     if (typeof body.isActive === "boolean") profilePatch.is_active = body.isActive;
 
-    const siteName = await resolveSiteName(body.siteId);
-    if (siteName !== undefined) {
-      profilePatch.company_name = siteName || null;
+    const requestedSiteIds = body.siteIds?.length ? body.siteIds : body.siteId !== undefined ? [body.siteId] : undefined;
+    if (requestedSiteIds !== undefined) {
+      const sites = await fetchSites({ includeImages: false });
+      const assignedSites = Array.from(new Set(requestedSiteIds.map((value) => value.trim()).filter(Boolean)))
+        .map((id) => sites.find((site) => site.id === id || site.name === id))
+        .filter((site): site is (typeof sites)[number] => Boolean(site));
+      if (!assignedSites.length || assignedSites.length !== new Set(requestedSiteIds).size) {
+        return NextResponse.json({ message: "Select at least one valid site." }, { status: 400 });
+      }
+      profilePatch.company_name = assignedSites[0].name;
+      const { error: removeError } = await supabase.from("site_manager_site_assignments").delete().eq("manager_id", id);
+      if (removeError) return NextResponse.json({ message: removeError.message }, { status: 400 });
+      const { error: assignmentError } = await supabase.from("site_manager_site_assignments").insert(assignedSites.map((site) => ({ manager_id: id, site_id: site.id })));
+      if (assignmentError) return NextResponse.json({ message: assignmentError.message }, { status: 400 });
     }
 
     if (Object.keys(profilePatch).length === 0 && body.password === undefined) {

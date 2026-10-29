@@ -6,11 +6,14 @@ import { indiaToday } from "@/lib/format";
 import { MetricCard } from "@/components/app/metric-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 export default function SiteManagerDashboardPage() {
   const today = indiaToday();
+  const [site, setSite] = useState("all");
   const { data } = useQuery({
-    queryKey: ["site-manager-overview"],
+    queryKey: ["site-manager-overview", site],
     queryFn: () =>
       fetchJson<{
         summary: {
@@ -21,13 +24,15 @@ export default function SiteManagerDashboardPage() {
         };
         visits: Array<Record<string, string>>;
         notifications: Array<{ id: string; title: string; message: string }>;
-      }>("/api/site-manager/overview"),
+        sites: Array<{ id: string; name: string }>;
+      }>(`/api/site-manager/overview${site === "all" ? "" : `?site=${encodeURIComponent(site)}`}`),
   });
 
   if (!data) return null;
 
   return (
     <div className="space-y-6">
+      <div className="max-w-sm"><Select value={site} onValueChange={setSite}><SelectTrigger><SelectValue placeholder="Filter by site" /></SelectTrigger><SelectContent><SelectItem value="all">All assigned sites</SelectItem>{data.sites.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard href={`/site-manager/visitors?date=${today}`} label="Today's Visitors" value={data.summary.todaysVisitors} helper="Checked in today" />
         <MetricCard href={`/site-manager/visitors?status=CHECKED_IN&date=${today}`} label="Checked In" value={data.summary.checkedInVisitors} helper="Checked in today" />
