@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { SiteRecord } from "@/lib/types";
 
 export default function AdminSiteManagersPage() {
@@ -161,7 +160,7 @@ export default function AdminSiteManagersPage() {
           <DialogHeader><DialogTitle>Edit Site Manager</DialogTitle></DialogHeader>
           <div className="grid gap-4">
             <Input placeholder="Name" value={editName} onChange={(event) => setEditName(event.target.value)} />
-            <SiteCheckboxes sites={sitesData?.sites ?? []} selected={editSiteIds} onChange={setEditSiteIds} />
+            <SiteCheckboxes sites={sitesData?.sites ?? []} selected={editSiteIds} onChange={setEditSiteIds} openUp />
             <Input type="password" placeholder="New password (leave blank to keep current)" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} />
           </div>
           <DialogFooter>
@@ -174,7 +173,8 @@ export default function AdminSiteManagersPage() {
   );
 }
 
-function SiteCheckboxes({ sites, selected, onChange }: { sites: SiteRecord[]; selected: string[]; onChange: (siteIds: string[]) => void }) {
+function SiteCheckboxes({ sites, selected, onChange, openUp = false }: { sites: SiteRecord[]; selected: string[]; onChange: (siteIds: string[]) => void; openUp?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
   const activeSites = sites.filter((site) => site.isActive);
   const label = !selected.length
     ? "Select assigned sites"
@@ -183,25 +183,21 @@ function SiteCheckboxes({ sites, selected, onChange }: { sites: SiteRecord[]; se
       : `${selected.length} sites selected`;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button className="w-full justify-between font-normal" type="button" variant="outline">
-          {label}<span className="text-muted-foreground">⌄</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72 w-[var(--radix-dropdown-menu-trigger-width)]">
-        <DropdownMenuLabel>Assigned sites</DropdownMenuLabel>
-        {activeSites.map((site) => (
-          <DropdownMenuCheckboxItem
-            key={site.id}
-            checked={selected.includes(site.id)}
-            onSelect={(event) => event.preventDefault()}
-            onCheckedChange={(checked) => onChange(checked ? [...selected, site.id] : selected.filter((id) => id !== site.id))}
-          >
-            {site.name}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="relative">
+      <Button className="w-full justify-between font-normal" type="button" variant="outline" onClick={() => setIsOpen((open) => !open)} aria-expanded={isOpen}>
+        {label}<span className="text-muted-foreground">⌄</span>
+      </Button>
+      {isOpen && (
+        <div className={`absolute z-50 max-h-52 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-lg ${openUp ? "bottom-full mb-1" : "top-full mt-1"}`}>
+          <p className="px-2 py-1 text-xs font-medium text-muted-foreground">Assigned sites</p>
+          {activeSites.map((site) => (
+            <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-accent" key={site.id}>
+              <input type="checkbox" checked={selected.includes(site.id)} onChange={(event) => onChange(event.target.checked ? [...selected, site.id] : selected.filter((id) => id !== site.id))} />
+              {site.name}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
