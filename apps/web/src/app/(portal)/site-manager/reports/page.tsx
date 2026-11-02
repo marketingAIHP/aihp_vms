@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/api";
 import { exportRowsToCsv, exportRowsToExcel, exportRowsToPdf } from "@/lib/exports";
 import { MetricCard } from "@/components/app/metric-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function vehicleNumberFromRemarks(value: unknown) {
   const match = String(value ?? "").match(/(?:^|\n)Vehicle Number:\s*(.+)/i);
@@ -13,13 +15,15 @@ function vehicleNumberFromRemarks(value: unknown) {
 }
 
 export default function SiteManagerReportsPage() {
+  const [site, setSite] = useState("all");
   const { data } = useQuery({
-    queryKey: ["site-manager-reports"],
+    queryKey: ["site-manager-reports", site],
     queryFn: () =>
       fetchJson<{
         visits: Array<Record<string, unknown>>;
         stats: { total: number; checkedIn: number; checkedOut: number };
-      }>("/api/site-manager/reports"),
+        sites: Array<{ id: string; name: string }>;
+      }>(`/api/site-manager/reports${site === "all" ? "" : `?site=${encodeURIComponent(site)}`}`),
   });
 
   if (!data) return null;
@@ -36,12 +40,12 @@ export default function SiteManagerReportsPage() {
     "Check-In": visit.checkInAt ?? "-",
     "Check-Out": visit.checkOutAt ?? "-",
   }));
-  const assignedSite = String(data.visits[0]?.siteName ?? "Assigned Site");
+  const selectedSiteLabel = site === "all" ? "All assigned sites" : site;
   const reportMetadata = {
-    title: `AIHP VMS Site Visitor Report - ${assignedSite}`,
+    title: `AIHP VMS Site Visitor Report - ${selectedSiteLabel}`,
     filters: {
       "Report Scope": "All available visitor records",
-      Site: assignedSite,
+      Site: selectedSiteLabel,
       "Generated At": new Date().toLocaleString(),
       "Total Records": reportRows.length,
     },
@@ -57,7 +61,18 @@ export default function SiteManagerReportsPage() {
 
       <Card className="border-border/70">
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <CardTitle>Download Reports</CardTitle>
+          <div className="space-y-2">
+            <CardTitle>Download Reports</CardTitle>
+            <div className="max-w-sm">
+              <Select value={site} onValueChange={setSite}>
+                <SelectTrigger aria-label="Filter report by site"><SelectValue placeholder="Select site" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All assigned sites</SelectItem>
+                  {data.sites.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex gap-3">
             <Button disabled={!reportRows.length} variant="outline" onClick={() => exportRowsToPdf("AIHP_VMS_Site_Manager_Visitor_Report", Object.keys(reportRows[0] ?? {}), reportRows, reportMetadata)}>PDF</Button>
             <Button disabled={!reportRows.length} variant="outline" onClick={() => exportRowsToExcel("AIHP_VMS_Site_Manager_Visitor_Report", reportRows, reportMetadata)}>Excel</Button>
@@ -65,7 +80,7 @@ export default function SiteManagerReportsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Use the export controls above for site-level walk-in visitor reports.</p>
+          <p className="text-sm text-muted-foreground">Choose a site, then download only that site&apos;s walk-in visitor report. Select all assigned sites to export the combined report.</p>
         </CardContent>
       </Card>
     </div>
