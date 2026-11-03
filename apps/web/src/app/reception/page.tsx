@@ -17,7 +17,7 @@ function buildSiteToken(value: string) {
 }
 
 const QR_DISPLAY_DURATION_MS = 60_000;
-const RECEPTION_VIDEO_URL = "/videos/aihp-managed-workspaces.mp4";
+const RECEPTION_VIDEO_URL = "/videos/aihp-central-reel.mp4";
 const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
 
 function getWebBaseUrl() {

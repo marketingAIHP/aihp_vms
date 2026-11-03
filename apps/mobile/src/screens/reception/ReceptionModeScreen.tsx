@@ -52,7 +52,7 @@ const QR_DISPLAY_DURATION_MS = 60_000;
 const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
 // React Native resolves bundled binary assets through a static require.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const receptionVideoSource = require("../../../assets/aihp-managed-workspaces.mp4");
+const receptionVideoSource = require("../../../assets/aihp-central-reel.mp4");
 
 type ReceptionSite = {
   address?: string;
