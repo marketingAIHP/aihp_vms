@@ -447,8 +447,9 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   siteImageCanvas: {
-    aspectRatio: 4 / 3,
-    minHeight: 360,
+    // Keep the reception reel at its native widescreen ratio. Rendering it in
+    // the old 4:3 canvas required a cover-scale that softened the image.
+    aspectRatio: 16 / 9,
     backgroundColor: colors.navyInk,
     overflow: "hidden"
   },
