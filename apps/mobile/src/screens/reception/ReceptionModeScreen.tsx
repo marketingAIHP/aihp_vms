@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useMemo, useState } from "react";
 import { QrCode } from "lucide-react-native";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -6,7 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "qrcode";
 import * as SecureStore from "expo-secure-store";
 import { SvgXml } from "react-native-svg";
-import { WebView } from "react-native-webview";
 import { AIHPLogo } from "../../components/branding/AIHPLogo";
 import { useAuth } from "../../context/AuthContext";
 import { useVmsData } from "../../hooks/use-vms-data";
@@ -50,10 +50,9 @@ const fallbackSites = [
 
 const QR_DISPLAY_DURATION_MS = 60_000;
 const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
-const RECEPTION_VIDEO_ID = "oGREsAohpMQ";
-// YouTube selects the highest stream supported by the device and connection.
-// The 16:9 container shows the entire player without applying a crop.
-const receptionVideoUrl = `https://www.youtube-nocookie.com/embed/${RECEPTION_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${RECEPTION_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&vq=hd1080`;
+// React Native resolves the clean, locally bundled reception video asset.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const receptionVideoSource = require("../../../assets/aihp-central-reel.mp4");
 
 type ReceptionSite = {
   address?: string;
@@ -137,6 +136,10 @@ function ReceptionModeContent() {
   const [activating, setActivating] = useState(false);
   const [siteRecords, setSiteRecords] = useState<ReceptionSite[]>([]);
   const [sitePickerVisible, setSitePickerVisible] = useState(false);
+  const videoPlayer = useVideoPlayer(receptionVideoSource, (player) => {
+    player.loop = true;
+    player.muted = true;
+  });
   const baseUrl = useMemo(() => getWebBaseUrl(), []);
   const availableSites = useMemo(
     () => (siteRecords.length
@@ -213,6 +216,15 @@ function ReceptionModeContent() {
     return () => clearTimeout(timer);
   }, [activeQr]);
 
+  useEffect(() => {
+    if (baseUrl && selectedSite && !activeQr) {
+      videoPlayer.play();
+      return;
+    }
+
+    videoPlayer.pause();
+  }, [activeQr, baseUrl, selectedSite, videoPlayer]);
+
   const siteToken = useMemo(() => buildSiteToken(selectedSite || "main"), [selectedSite]);
   const checkInUrl = baseUrl ? `${baseUrl}/checkin/${siteToken}` : "";
   const checkOutUrl = baseUrl ? `${baseUrl}/checkout/${siteToken}` : "";
@@ -262,13 +274,12 @@ function ReceptionModeContent() {
                   <>
                       <View style={styles.siteImageCard}>
                         <View style={styles.siteImageCanvas}>
-                          <WebView
-                            source={{ uri: receptionVideoUrl }}
+                          <VideoView
+                            player={videoPlayer}
                             style={styles.siteVideo}
-                            allowsFullscreenVideo
-                            javaScriptEnabled
-                            mediaPlaybackRequiresUserAction={false}
-                            scrollEnabled={false}
+                            contentFit="contain"
+                            nativeControls={false}
+                            surfaceType="surfaceView"
                           />
                         </View>
                       </View>
