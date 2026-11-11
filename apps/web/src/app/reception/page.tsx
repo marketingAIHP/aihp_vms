@@ -17,7 +17,8 @@ function buildSiteToken(value: string) {
 }
 
 const QR_DISPLAY_DURATION_MS = 60_000;
-const RECEPTION_VIDEO_URL = "/videos/aihp-central-reel.mp4";
+const RECEPTION_VIDEO_ID = "oGREsAohpMQ";
+const RECEPTION_VIDEO_URL = `https://www.youtube-nocookie.com/embed/${RECEPTION_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${RECEPTION_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&vq=hd1080`;
 const DEVICE_SITE_STORAGE_KEY = "aihp-reception-device-site";
 
 function getWebBaseUrl() {
@@ -206,16 +207,13 @@ export default function ReceptionPage() {
               </div> : null}
 
               <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-lg">
-                <div className="aspect-video w-full overflow-hidden bg-black lg:aspect-[16/8]">
-                  <video
+                <div className="aspect-video w-full bg-black">
+                  <iframe
                     src={RECEPTION_VIDEO_URL}
-                    className="h-full w-full object-cover"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    aria-label="AIHP managed workspaces introduction"
+                    title="AIHP reception introduction"
+                    className="size-full border-0"
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
                   />
                 </div>
               </div>
